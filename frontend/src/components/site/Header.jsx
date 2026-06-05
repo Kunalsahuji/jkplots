@@ -17,6 +17,10 @@ export function Header() {
   const location = useLocation();
   const currentPath = location.pathname + location.search;
 
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+  const showPostProperty = !user || user.role === "dealer";
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/85 backdrop-blur-xl">
       <div className="container-px mx-auto flex h-16 max-w-7xl items-center justify-between gap-4">
@@ -50,11 +54,13 @@ export function Header() {
           <Link to="/auth" className="hidden text-sm font-medium text-muted-foreground hover:text-foreground sm:inline">
             Sign in
           </Link>
-          <Link to="/post-property" className="hidden sm:inline-flex">
-            <Button className="gap-1.5 rounded-full bg-foreground text-background hover:bg-foreground/90">
-              <Plus className="h-4 w-4" /> Post Property <span className="ml-1 rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-accent-foreground">FREE</span>
-            </Button>
-          </Link>
+          {showPostProperty && (
+            <Link to="/post-property" className="hidden sm:inline-flex">
+              <Button className="gap-1.5 rounded-full bg-foreground text-background hover:bg-foreground/90">
+                <Plus className="h-4 w-4" /> Post Property <span className="ml-1 rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-accent-foreground">FREE</span>
+              </Button>
+            </Link>
+          )}
           <button
             onClick={() => setOpen(!open)}
             className="grid h-10 w-10 place-items-center rounded-lg border border-border lg:hidden"
@@ -83,9 +89,11 @@ export function Header() {
                 </Link>
               );
             })}
-            <Link to="/post-property" onClick={() => setOpen(false)}>
-              <Button className="mt-2 w-full rounded-full bg-foreground text-background">Post Property — FREE</Button>
-            </Link>
+            {showPostProperty && (
+              <Link to="/post-property" onClick={() => setOpen(false)}>
+                <Button className="mt-2 w-full rounded-full bg-foreground text-background">Post Property — FREE</Button>
+              </Link>
+            )}
           </div>
         </div>
       )}

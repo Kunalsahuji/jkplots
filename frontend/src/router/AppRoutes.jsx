@@ -1,7 +1,9 @@
-import { Routes, Route, Outlet, Link } from "react-router-dom";
+import { Routes, Route, Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { Header, MobileTabBar } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
+import { useEffect } from "react";
 
 // Page imports
 import HomePage from "@/pages/Home/HomePage";
@@ -12,6 +14,29 @@ import PostPropertyPage from "@/pages/Properties/PostPropertyPage";
 import UserDashboard from "@/pages/Dashboard/UserDashboard";
 import AuthPage from "@/pages/Auth/AuthPage";
 import SavedPage from "@/pages/Saved/SavedPage";
+
+function ProtectedRoute({ children }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const user = localStorage.getItem("user");
+
+  useEffect(() => {
+    if (!user) {
+      toast.error("Please login to access this page", {
+        description: "You must be signed in to view listings or post properties.",
+        action: {
+          label: "Sign In",
+          onClick: () => navigate(`/auth?redirect=${location.pathname}${location.search}`)
+        }
+      });
+      navigate(`/auth?redirect=${location.pathname}${location.search}`);
+    }
+  }, [user, navigate, location]);
+
+  if (!user) return null;
+
+  return children;
+}
 
 function AppLayout() {
   return (
@@ -49,15 +74,20 @@ export default function AppRoutes() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<HomePage />} />
-        <Route path="/explore" element={<ExplorePage />} />
-        <Route path="/properties" element={<PropertyListPage />} />
-        <Route path="/properties/:id" element={<PropertyDetailPage />} />
-        <Route path="/post-property" element={<PostPropertyPage />} />
-        <Route path="/dashboard" element={<UserDashboard />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/saved" element={<SavedPage />} />
-        <Route path="*" element={<NotFound />} />
+        <Route path="/explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
+        <Route path="/properties" element={<ProtectedRoute><PropertyListPage /></ProtectedRoute>} />
+        <Route path="/properties/:id" element={<ProtectedRoute><PropertyDetailPage /></ProtectedRoute>} />
+        <Route path="/post-property" element={<ProtectedRoute><PostPropertyPage /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
+        <Route path="/saved" element={<ProtectedRoute><SavedPage /></ProtectedRoute>} />
       </Route>
+      <Route path="/auth" element={
+        <>
+          <AuthPage />
+          <Toaster />
+        </>
+      } />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

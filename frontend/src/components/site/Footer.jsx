@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Home, Facebook, Instagram, Twitter, Youtube, Mail, Phone } from "lucide-react";
+import { Home, Mail, Phone } from "lucide-react";
 
 export function Footer() {
   return (
@@ -18,17 +18,7 @@ export function Footer() {
             <p className="mt-4 max-w-sm text-sm text-muted-foreground">
               Jammu &amp; Kashmir's most trusted property marketplace. Verified listings, transparent pricing, real dealers.
             </p>
-            <div className="mt-4 flex gap-3 text-muted-foreground">
-              {[Facebook, Instagram, Twitter, Youtube].map((I, i) => (
-                <a
-                  key={i}
-                  href="#"
-                  className="grid h-9 w-9 place-items-center rounded-full border border-border hover:bg-background hover:text-foreground"
-                >
-                  <I className="h-4 w-4" />
-                </a>
-              ))}
-            </div>
+
           </div>
 
           {[
