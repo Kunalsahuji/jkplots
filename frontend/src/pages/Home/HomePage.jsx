@@ -12,6 +12,7 @@ import catCommercial from "@/assets/cat-commercial.jpg";
 import { SearchBar } from "@/components/site/SearchBar";
 import { PropertyCard } from "@/components/site/PropertyCard";
 import { properties, cities } from "@/utils/properties";
+import { useAuth } from "@/context/AuthContext";
 import {
   ShieldCheck,
   Sparkles,
@@ -34,9 +35,8 @@ export default function HomePage() {
   const [propertyList, setPropertyList] = useState([]);
   const [bgIndex, setBgIndex] = useState(0);
 
-  const userStr = localStorage.getItem("user");
-  const user = userStr ? JSON.parse(userStr) : null;
-  const showPostProperty = !user || user.role === "dealer";
+  const { user, isAuthenticated } = useAuth();
+  const showPostProperty = isAuthenticated && user?.role === "dealer";
 
   useEffect(() => {
     const fetchProperties = async () => {

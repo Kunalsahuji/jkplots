@@ -2,13 +2,18 @@ import { Link } from "react-router-dom";
 import { Home, Heart, Bell, BarChart3, CreditCard, Settings, Plus, Eye, MessageSquare, TrendingUp } from "lucide-react";
 import { properties } from "@/utils/properties";
 import { PropertyCard } from "@/components/site/PropertyCard";
+import { useAuth } from "@/context/AuthContext";
 
 export default function UserDashboard() {
+  const { user } = useAuth();
+  const isDealer = user?.role === "dealer";
+  const userInitials = user?.name ? user.name.charAt(0).toUpperCase() : "U";
+
   const stats = [
-    { label: "Active listings", value: "4", icon: Home, trend: "+1 this week" },
-    { label: "Total views", value: "12,480", icon: Eye, trend: "+18%" },
-    { label: "Enquiries", value: "86", icon: MessageSquare, trend: "+9 today" },
-    { label: "Saved by users", value: "243", icon: Heart, trend: "+12%" },
+    { label: "Active listings", value: isDealer ? "4" : "0", icon: Home, trend: "+0 this week" },
+    { label: "Total views", value: isDealer ? "12,480" : "0", icon: Eye, trend: "+0%" },
+    { label: "Enquiries", value: isDealer ? "86" : "0", icon: MessageSquare, trend: "+0 today" },
+    { label: "Saved by users", value: isDealer ? "243" : "0", icon: Heart, trend: "+0%" },
   ];
 
   const tabs = [
@@ -28,11 +33,13 @@ export default function UserDashboard() {
           <div className="rounded-2xl border border-border bg-card p-5">
             <div className="flex items-center gap-3">
               <div className="grid h-12 w-12 place-items-center rounded-full bg-gradient-hero font-bold text-primary-foreground">
-                A
+                {userInitials}
               </div>
               <div>
-                <div className="font-semibold">Aamir H.</div>
-                <div className="text-xs text-muted-foreground">Premium Dealer</div>
+                <div className="font-semibold">{user?.name || "User"}</div>
+                <div className="text-xs text-muted-foreground capitalize">
+                  {user?.role === "dealer" ? "Premium Dealer" : `${user?.role || "user"} Profile`}
+                </div>
               </div>
             </div>
           </div>
@@ -56,15 +63,17 @@ export default function UserDashboard() {
         <div className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h1 className="font-display text-3xl font-bold">Welcome back, Aamir 👋</h1>
+              <h1 className="font-display text-3xl font-bold">Welcome back, {user?.name?.split(' ')[0] || "User"} 👋</h1>
               <p className="text-muted-foreground">Here's how your properties are performing</p>
             </div>
-            <Link
-              to="/post-property"
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-            >
-              <Plus className="h-4 w-4" /> Post Property
-            </Link>
+            {isDealer && (
+              <Link
+                to="/post-property"
+                className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                <Plus className="h-4 w-4" /> Post Property
+              </Link>
+            )}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

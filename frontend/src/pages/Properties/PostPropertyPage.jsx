@@ -3,9 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Upload, Check } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
+import api from "@/utils/api";
 
 export default function PostPropertyPage() {
   const navigate = useNavigate();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   const [purpose, setPurpose] = useState("Buy");
   const [type, setType] = useState("Apartment");
@@ -17,54 +20,44 @@ export default function PostPropertyPage() {
   const [contactNumber, setContactNumber] = useState("");
 
   useEffect(() => {
-    const userStr = localStorage.getItem("user");
-    if (!userStr) {
-      navigate("/auth?redirect=/post-property");
-      return;
+    if (!isLoading) {
+      if (!isAuthenticated) {
+        navigate("/auth?redirect=/post-property");
+      } else if (user?.role !== "dealer") {
+        toast.error("Only dealers can post properties.");
+        navigate("/");
+      }
     }
-    const user = JSON.parse(userStr);
-    if (user.role !== "dealer") {
-      toast.error("Only dealers can post properties.");
-      navigate("/");
-    }
-  }, [navigate]);
+  }, [user, isAuthenticated, isLoading, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const userStr = localStorage.getItem("user");
-    const user = userStr ? JSON.parse(userStr) : null;
 
     const title = `${bedrooms > 0 ? bedrooms + ' BHK ' : ''}${type} in ${locality}`;
 
     try {
-      const response = await fetch("http://localhost:5000/api/properties", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          title,
-          purpose,
-          type,
-          city,
-          locality,
-          bedrooms: Number(bedrooms) || 0,
-          area: Number(area) || 0,
-          price,
-          contactNumber,
-          dealerPhone: user ? user.phone : ""
-        })
+      const { data } = await api.post("/properties", {
+        title,
+        purpose,
+        type,
+        city,
+        locality,
+        bedrooms: Number(bedrooms) || 0,
+        area: Number(area) || 0,
+        price,
+        contactNumber,
+        dealerPhone: user ? user.phone : ""
       });
 
-      const resData = await response.json();
-      if (resData.success) {
+      if (data.success) {
         toast.success("Property listed successfully!");
         navigate("/");
       } else {
-        toast.error(resData.error || "Failed to post property.");
+        toast.error(data.error || "Failed to post property.");
       }
     } catch (err) {
-      toast.error("Failed to connect to backend server.");
+      const data = err.response?.data;
+      toast.error(data?.error || "Failed to connect to backend server.");
     }
   };
 

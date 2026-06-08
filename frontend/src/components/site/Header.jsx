@@ -1,7 +1,8 @@
-import { Link, useLocation } from "react-router-dom";
-import { Home, Search, Heart, User, Menu, X, Plus } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Home, Search, Heart, User, Menu, X, Plus, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/AuthContext";
 
 const nav = [
   { to: "/", label: "Home" },
@@ -15,11 +16,16 @@ const nav = [
 export function Header() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPath = location.pathname + location.search;
 
-  const userStr = localStorage.getItem("user");
-  const user = userStr ? JSON.parse(userStr) : null;
-  const showPostProperty = !user || user.role === "dealer";
+  const { user, isAuthenticated, logout } = useAuth();
+  const showPostProperty = isAuthenticated && user?.role === "dealer";
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/", { replace: true });
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/85 backdrop-blur-xl">
@@ -51,9 +57,23 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link to="/auth" className="hidden text-sm font-medium text-muted-foreground hover:text-foreground sm:inline">
-            Sign in
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <Link to="/dashboard" className="hidden items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground sm:inline-flex">
+                <User className="h-4 w-4" /> {user?.name?.split(' ')[0]}
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="hidden items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:border-destructive hover:text-destructive sm:inline-flex"
+              >
+                <LogOut className="h-3.5 w-3.5" /> Logout
+              </button>
+            </>
+          ) : (
+            <Link to="/auth" className="hidden text-sm font-medium text-muted-foreground hover:text-foreground sm:inline">
+              Sign in
+            </Link>
+          )}
           {showPostProperty && (
             <Link to="/post-property" className="hidden sm:inline-flex">
               <Button className="gap-1.5 rounded-full bg-foreground text-background hover:bg-foreground/90">
