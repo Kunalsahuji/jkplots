@@ -6,6 +6,10 @@ const PropertySchema = new mongoose.Schema({
         required: [true, 'Please add a property title'],
         trim: true
     },
+    description: {
+        type: String,
+        trim: true
+    },
     purpose: {
         type: String,
         required: [true, 'Please specify the purpose'],
@@ -33,7 +37,7 @@ const PropertySchema = new mongoose.Schema({
         required: [true, 'Please add the property area in sqft']
     },
     price: {
-        type: String,
+        type: Number,
         required: [true, 'Please specify the price']
     },
     contactNumber: {

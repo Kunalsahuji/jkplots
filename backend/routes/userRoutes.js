@@ -6,9 +6,10 @@ const {
     verifyOtp,
     getMe,
     logout,
+    getUsers,
 } = require('../controllers/userController');
 
-const { protect } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 const { sendOtpValidation, verifyOtpValidation } = require('../middleware/userValidation');
 const validate = require('../utils/validate');
 
@@ -19,5 +20,6 @@ router.post('/verify-otp', verifyOtpValidation, validate, verifyOtp);
 // ─── Protected routes (JWT required) ─────────────────────────────────────────
 router.get('/me', protect, getMe);
 router.post('/logout', protect, logout);
+router.get('/', protect, authorize('admin'), getUsers);
 
 module.exports = router;

@@ -16,11 +16,11 @@ exports.sendOtpValidation = [
     body('phone')
         .trim()
         .notEmpty().withMessage('Mobile number is required')
-        .matches(/^\d{10}$/).withMessage('Enter a valid 10-digit mobile number'),
+        .matches(/^\+91[6-9]\d{9}$/).withMessage('Enter a valid mobile number starting with +91 followed by 10 digits starting with 6-9'),
 
     body('role')
         .optional()
-        .isIn(['user', 'dealer']).withMessage('Role must be either user or dealer'),
+        .isIn(['user', 'dealer', 'admin']).withMessage('Role must be either user, dealer, or admin'),
 ];
 
 // Step 2: Verify OTP
@@ -28,7 +28,7 @@ exports.verifyOtpValidation = [
     body('phone')
         .trim()
         .notEmpty().withMessage('Mobile number is required')
-        .matches(/^\d{10}$/).withMessage('Enter a valid 10-digit mobile number'),
+        .matches(/^\+91[6-9]\d{9}$/).withMessage('Enter a valid mobile number starting with +91 followed by 10 digits starting with 6-9'),
 
     body('otp')
         .trim()

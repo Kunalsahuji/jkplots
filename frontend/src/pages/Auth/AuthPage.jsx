@@ -20,7 +20,7 @@ const step1Schema = z.object({
     phone: z
         .string()
         .trim()
-        .regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
+        .regex(/^[6-9]\d{9}$/, 'Mobile number must be exactly 10 digits starting with 6-9'),
     role: z.enum(['user', 'dealer']).default('user'),
 });
 
@@ -102,8 +102,12 @@ export default function AuthPage() {
         setServerError('');
         setIsSubmitting(true);
         try {
-            await api.post('/users/send-otp', values);
-            setPhone(values.phone);
+            const fullPhone = `+91${values.phone}`;
+            await api.post('/users/send-otp', {
+                ...values,
+                phone: fullPhone
+            });
+            setPhone(fullPhone);
             setName(values.name);
             setRole(values.role);
             setStep(2);
@@ -133,7 +137,11 @@ export default function AuthPage() {
             }
         } catch (err) {
             const data = err.response?.data;
-            setServerError(data?.error || 'OTP verification failed. Please try again.');
+            if (data?.errors) {
+                setServerError(data.errors.map((e) => e.message).join(' · '));
+            } else {
+                setServerError(data?.error || 'OTP verification failed. Please try again.');
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -200,7 +208,7 @@ export default function AuthPage() {
                         <p className="mt-1 text-sm text-muted-foreground">
                             {step === 1
                                 ? 'Enter your details to continue'
-                                : `OTP sent to +91 ${phone}`}
+                                : `OTP sent to ${phone}`}
                         </p>
                     </div>
 

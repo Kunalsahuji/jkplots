@@ -7,7 +7,7 @@ const UserSchema = new mongoose.Schema(
             required: [true, 'Mobile number is required'],
             unique: true,
             trim: true,
-            match: [/^\d{10}$/, 'Enter a valid 10-digit mobile number'],
+            match: [/^\+91[6-9]\d{9}$/, 'Enter a valid mobile number starting with +91 followed by 10 digits starting with 6-9'],
         },
         name: {
             type: String,

@@ -13,6 +13,9 @@ import PostPropertyPage from '@/pages/Properties/PostPropertyPage';
 import UserDashboard from '@/pages/Dashboard/UserDashboard';
 import AuthPage from '@/pages/Auth/AuthPage';
 import SavedPage from '@/pages/Saved/SavedPage';
+import AdminLoginPage from '@/pages/Admin/AdminLoginPage';
+import AdminDashboardPage from '@/pages/Admin/AdminDashboardPage';
+import EditPropertyPage from '@/pages/Properties/EditPropertyPage';
 
 // ─── Skeleton loader shown while session check is in-flight ───────────────────
 function PageSkeleton() {
@@ -46,6 +49,21 @@ function ProtectedRoute({ children }) {
     if (!isAuthenticated) {
         const redirectPath = `${location.pathname}${location.search}`;
         navigate(`/auth?redirect=${encodeURIComponent(redirectPath)}`, { replace: true });
+        return null;
+    }
+
+    return children;
+}
+
+// ─── Admin Protected Route ───────────────────────────────────────────────────
+function AdminProtectedRoute({ children }) {
+    const { user, isAuthenticated, isLoading } = useAuth();
+    const navigate = useNavigate();
+
+    if (isLoading) return <PageSkeleton />;
+
+    if (!isAuthenticated || user?.role !== 'admin') {
+        navigate('/admin/login', { replace: true });
         return null;
     }
 
@@ -98,6 +116,7 @@ export default function AppRoutes() {
                 <Route path="/properties" element={<ProtectedRoute><PropertyListPage /></ProtectedRoute>} />
                 <Route path="/properties/:id" element={<ProtectedRoute><PropertyDetailPage /></ProtectedRoute>} />
                 <Route path="/post-property" element={<ProtectedRoute><PostPropertyPage /></ProtectedRoute>} />
+                <Route path="/edit-property/:id" element={<ProtectedRoute><EditPropertyPage /></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
                 <Route path="/saved" element={<ProtectedRoute><SavedPage /></ProtectedRoute>} />
             </Route>
@@ -110,6 +129,18 @@ export default function AppRoutes() {
                         <AuthPage />
                         <Toaster />
                     </>
+                }
+            />
+
+            {/* Admin Portal — outside layout (full screen dark admin design) */}
+            <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route
+                path="/admin/dashboard"
+                element={
+                    <AdminProtectedRoute>
+                        <AdminDashboardPage />
+                        <Toaster />
+                    </AdminProtectedRoute>
                 }
             />
 

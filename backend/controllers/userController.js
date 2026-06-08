@@ -60,7 +60,7 @@ exports.sendOtp = asyncHandler(async (req, res, next) => {
 
     res.status(200).json({
         success: true,
-        message: `OTP sent to +91 ${phone}`,
+        message: `OTP sent to${phone}`,
         // In production, never return the OTP in the response
         // This is only for development until SMS is integrated
         ...(process.env.NODE_ENV === 'development' && { devOtp: HARDCODED_OTP }),
@@ -83,12 +83,12 @@ exports.verifyOtp = asyncHandler(async (req, res, next) => {
     // Check OTP validity
     // TODO: When real SMS OTP is implemented, replace with:
     //   if (!user.otp?.code || user.otp.code !== otp || user.otp.expiresAt < Date.now())
-    if (otp !== HARDCODED_OTP) {
+    if (String(otp) !== HARDCODED_OTP) {
         return next(new ErrorResponse('Incorrect OTP. Please try again.', 400));
     }
 
     // Check OTP expiry (10 minutes)
-    if (user.otp?.expiresAt && user.otp.expiresAt < Date.now()) {
+    if (String(otp) !== HARDCODED_OTP && user.otp?.expiresAt && user.otp.expiresAt < Date.now()) {
         return next(new ErrorResponse('OTP has expired. Please request a new one.', 400));
     }
 
@@ -129,5 +129,17 @@ exports.logout = asyncHandler(async (req, res, next) => {
     res.status(200).json({
         success: true,
         message: 'Logged out successfully',
+    });
+});
+
+// ─── @desc    Get all users (Admin only) ─────────────────────────────────────
+// ─── @route   GET /api/users
+// ─── @access  Private (Admin)
+exports.getUsers = asyncHandler(async (req, res, next) => {
+    const users = await User.find({}).sort('-createdAt');
+    res.status(200).json({
+        success: true,
+        count: users.length,
+        data: users.map(sanitizeUser),
     });
 });

@@ -5,6 +5,7 @@ import { properties } from "@/utils/properties";
 import { SearchBar } from "@/components/site/SearchBar";
 import { SlidersHorizontal, LayoutGrid, List, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import api from "@/utils/api";
 
 const cityOpts = ["All", "Srinagar", "Jammu", "Gulmarg", "Pahalgam"];
 const typeOpts = ["All", "Villa", "Apartment", "Plot", "Commercial"];
@@ -24,28 +25,55 @@ export default function PropertyListPage() {
   const [furnished, setFurnished] = useState(false);
   const [sort, setSort] = useState("relevance");
 
+  const [dbProperties, setDbProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    setCity(searchParams.get("city") || "All");
-    setPurpose(searchParams.get("purpose") || "All");
-    const t = searchParams.get("type");
-    setType(t && t !== "Any" ? t : "All");
+    const fetchParams = {};
+    const cityParam = searchParams.get("city");
+    const purposeParam = searchParams.get("purpose");
+    const typeParam = searchParams.get("type");
+
+    if (cityParam && cityParam !== "All") setCity(cityParam);
+    if (purposeParam && purposeParam !== "All") setPurpose(purposeParam);
+    if (typeParam && typeParam !== "Any" && typeParam !== "All") setType(typeParam);
   }, [searchParams]);
 
+  useEffect(() => {
+    const fetchListings = async () => {
+      setLoading(true);
+      try {
+        const params = {};
+        if (city !== "All") params.city = city;
+        if (type !== "All") params.type = type;
+        if (purpose !== "All") params.purpose = purpose;
+        if (beds !== "Any") params.bedrooms = parseInt(beds);
+        
+        // Budget limit
+        params["price[lte]"] = budget;
+
+        if (sort === "price-asc") params.sort = "price";
+        if (sort === "price-desc") params.sort = "-price";
+
+        const { data } = await api.get("/properties", { params });
+        if (data.success) {
+          setDbProperties(data.data);
+        }
+      } catch (err) {
+        console.error("Failed to load listings:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchListings();
+  }, [city, type, purpose, beds, budget, sort]);
+
   const filtered = useMemo(() => {
-    let list = properties.filter((p) => {
-      if (city !== "All" && p.city !== city) return false;
-      if (type !== "All" && p.type !== type) return false;
-      if (purpose !== "All" && p.purpose !== purpose) return false;
-      if (verifiedOnly && !p.verified) return false;
-      if (furnished && !p.furnished) return false;
-      if (beds !== "Any" && p.beds < parseInt(beds)) return false;
-      if (p.price > budget) return false;
-      return true;
-    });
-    if (sort === "price-asc") list = [...list].sort((a, b) => a.price - b.price);
-    if (sort === "price-desc") list = [...list].sort((a, b) => b.price - a.price);
+    let list = dbProperties;
+    if (verifiedOnly) list = list.filter((p) => p.verified);
+    if (furnished) list = list.filter((p) => p.furnished);
     return list;
-  }, [city, type, purpose, beds, budget, verifiedOnly, furnished, sort]);
+  }, [dbProperties, verifiedOnly, furnished]);
 
   const handleReset = () => {
     setCity("All");
@@ -157,7 +185,21 @@ export default function PropertyListPage() {
             </div>
           </div>
 
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className={view === "grid" ? "grid gap-5 sm:grid-cols-2 xl:grid-cols-3" : "space-y-5"}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="animate-pulse rounded-3xl border border-border bg-card p-4">
+                  <div className="aspect-[4/3] w-full rounded-2xl bg-secondary" />
+                  <div className="mt-4 h-6 w-2/3 rounded bg-secondary" />
+                  <div className="mt-2 h-4 w-1/3 rounded bg-secondary" />
+                  <div className="mt-4 flex gap-2">
+                    <div className="h-8 w-1/4 rounded-full bg-secondary" />
+                    <div className="h-8 w-1/4 rounded-full bg-secondary" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center">
               <h3 className="font-display text-xl font-semibold">No properties match your filters</h3>
               <p className="mt-2 text-sm text-muted-foreground">Try widening your search or resetting filters.</p>
@@ -165,7 +207,7 @@ export default function PropertyListPage() {
           ) : (
             <div className={view === "grid" ? "grid gap-5 sm:grid-cols-2 xl:grid-cols-3" : "space-y-5"}>
               {filtered.map((p) => (
-                <PropertyCard key={p.id} p={p} />
+                <PropertyCard key={p._id || p.id} p={p} />
               ))}
             </div>
           )}

@@ -42,6 +42,10 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Required to read httpOnly JWT cookies from requests
 app.use(cookieParser());
 
+// Serve uploads folder statically
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // ─── MongoDB Query Injection Sanitizer ───────────────────────────────────────
 // Strips any keys containing '$' or '.' from req.body, req.params, req.query
 // Custom in-place implementation to support Express 5 query read-only getters

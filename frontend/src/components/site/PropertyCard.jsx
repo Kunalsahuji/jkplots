@@ -2,22 +2,45 @@ import { Link } from "react-router-dom";
 import { MapPin, BadgeCheck, Heart } from "lucide-react";
 import { useState } from "react";
 
+const formatPrice = (val) => {
+  if (!val) return "₹—";
+  if (typeof val === "string") return val; // Handle mock price strings
+  if (val >= 10000000) return `₹${(val / 10000000).toFixed(2)} Cr`;
+  if (val >= 100000) return `₹${(val / 100000).toFixed(1)} L`;
+  return `₹${val.toLocaleString()}`;
+};
+
+const resolveImage = (img) => {
+  if (!img) return "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80";
+  if (img.startsWith("http") || img.startsWith("data:")) return img;
+  return `http://localhost:5000${img}`;
+};
+
 export function PropertyCard({ p }) {
   const [saved, setSaved] = useState(false);
+  
+  const id = p._id || p.id;
+  const title = p.title;
+  const image = resolveImage(p.photos?.[0] || p.image);
+  const area = p.locality || p.area;
+  const city = p.city;
+  const priceLabel = formatPrice(p.price || p.priceLabel);
+  const type = p.type;
+
   return (
     <Link
-      to={`/properties/${p.id}`}
+      to={`/properties/${id}`}
       className="group block overflow-hidden rounded-xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-card"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
         <img
-          src={p.image}
-          alt={p.title}
+          src={image}
+          alt={title}
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         <div className="absolute left-2 top-2 flex gap-1.5">
-          {p.verified && (
+          {(p.verified || p.isActive) && (
             <span className="flex items-center gap-0.5 rounded-full bg-success px-2 py-0.5 text-[10px] font-semibold text-success-foreground">
               <BadgeCheck className="h-2.5 w-2.5" /> Verified
             </span>
@@ -42,14 +65,14 @@ export function PropertyCard({ p }) {
       </div>
 
       <div className="space-y-1.5 p-3">
-        <h3 className="line-clamp-1 font-display text-sm font-semibold leading-tight">{p.title}</h3>
+        <h3 className="line-clamp-1 font-display text-sm font-semibold leading-tight">{title}</h3>
         <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
-          <MapPin className="h-3 w-3" /> <span className="line-clamp-1">{p.area}, {p.city}</span>
+          <MapPin className="h-3 w-3" /> <span className="line-clamp-1">{area}, {city}</span>
         </p>
         <div className="flex items-end justify-between pt-1">
-          <div className="font-display text-base font-bold text-primary">{p.priceLabel}</div>
+          <div className="font-display text-base font-bold text-primary">{priceLabel}</div>
           <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-medium text-primary">
-            {p.type}
+            {type}
           </span>
         </div>
       </div>

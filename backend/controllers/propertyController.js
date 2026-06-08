@@ -1,30 +1,134 @@
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 const Property = require('../models/Property');
 const ErrorResponse = require('../utils/errorResponse');
+
+// Helper to save base64 to Cloudinary with local-disk fallback
+const saveBase64File = async (base64Str) => {
+    try {
+        if (!base64Str || !base64Str.startsWith('data:')) {
+            return base64Str; // Already a URL or relative path
+        }
+
+        // Try Cloudinary first
+        const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+        const apiKey = process.env.CLOUDINARY_API_KEY;
+        const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+        if (cloudName && apiKey && apiSecret) {
+            const timestamp = Math.round(new Date().getTime() / 1000);
+            const signatureStr = `timestamp=${timestamp}${apiSecret}`;
+            const signature = crypto.createHash('sha1').update(signatureStr).digest('hex');
+
+            const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    file: base64Str,
+                    api_key: apiKey,
+                    timestamp: timestamp,
+                    signature: signature
+                })
+            });
+
+            const result = await response.json();
+            if (result.secure_url) {
+                return result.secure_url;
+            } else if (result.error) {
+                console.error('Cloudinary Upload Failed:', result.error.message);
+            }
+        }
+    } catch (cloudinaryErr) {
+        console.error('Cloudinary integration error, falling back to disk:', cloudinaryErr);
+    }
+
+    // Fallback: Save to Local Disk
+    try {
+        const matches = base64Str.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (!matches || matches.length !== 3) {
+            return base64Str;
+        }
+
+        const mimeType = matches[1];
+        const ext = mimeType.split('/')[1] || 'png';
+        const dataBuffer = Buffer.from(matches[2], 'base64');
+
+        const uploadDir = path.join(__dirname, '../uploads');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
+        const filename = `file_${Date.now()}_${Math.round(Math.random() * 1e6)}.${ext}`;
+        const filePath = path.join(uploadDir, filename);
+
+        fs.writeFileSync(filePath, dataBuffer);
+        return `/uploads/${filename}`;
+    } catch (diskErr) {
+        console.error('Local disk fallback failed:', diskErr);
+        return base64Str;
+    }
+};
 
 // @desc    Get all properties (with filtering)
 // @route   GET /api/properties
 // @access  Public
 exports.getProperties = async (req, res, next) => {
     try {
-        let query;
-
-        // Copy req.query
         const reqQuery = { ...req.query };
 
         // Fields to exclude
         const removeFields = ['select', 'sort', 'page', 'limit'];
-
-        // Loop over removeFields and delete them from reqQuery
         removeFields.forEach(param => delete reqQuery[param]);
 
-        // Create query search object
-        let queryStr = JSON.stringify(reqQuery);
+        const filterObj = {};
 
-        // Create operators ($gt, $gte, etc)
-        queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
+        // City (case-insensitive regex)
+        if (reqQuery.city && reqQuery.city !== 'All') {
+            filterObj.city = { $regex: new RegExp(`^${reqQuery.city}$`, 'i') };
+        }
 
-        // Finding resource
-        query = Property.find(JSON.parse(queryStr));
+        // Type
+        if (reqQuery.type && reqQuery.type !== 'All') {
+            filterObj.type = reqQuery.type;
+        }
+
+        // Purpose & Commercial logic
+        if (reqQuery.purpose && reqQuery.purpose !== 'All') {
+            if (reqQuery.purpose === 'Commercial') {
+                filterObj.$or = [
+                    { purpose: 'Commercial' },
+                    { type: 'Commercial' }
+                ];
+            } else {
+                filterObj.purpose = reqQuery.purpose;
+            }
+        }
+
+        // Locality (partial regex match)
+        if (reqQuery.locality) {
+            filterObj.locality = { $regex: reqQuery.locality, $options: 'i' };
+        }
+
+        // Bedrooms
+        if (reqQuery.bedrooms) {
+            filterObj.bedrooms = Number(reqQuery.bedrooms);
+        }
+
+        // Price parsing (budget bounds)
+        const priceFilter = {};
+        if (req.query['price[lte]']) {
+            priceFilter.$lte = Number(req.query['price[lte]']);
+        }
+        if (req.query['price[gte]']) {
+            priceFilter.$gte = Number(req.query['price[gte]']);
+        }
+        if (Object.keys(priceFilter).length > 0) {
+            filterObj.price = priceFilter;
+        }
+
+        let query = Property.find(filterObj);
 
         // Sort
         if (req.query.sort) {
@@ -34,7 +138,6 @@ exports.getProperties = async (req, res, next) => {
             query = query.sort('-createdAt');
         }
 
-        // Executing query
         const properties = await query;
 
         res.status(200).json({
@@ -47,16 +150,106 @@ exports.getProperties = async (req, res, next) => {
     }
 };
 
+// @desc    Get single property by ID
+// @route   GET /api/properties/:id
+// @access  Public
+exports.getProperty = async (req, res, next) => {
+    try {
+        const property = await Property.findById(req.params.id);
+
+        if (!property) {
+            return next(new ErrorResponse(`Property not found with id of ${req.params.id}`, 404));
+        }
+
+        res.status(200).json({
+            success: true,
+            data: property
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
 // @desc    Create new property
 // @route   POST /api/properties
-// @access  Public
+// @access  Private (Dealer/Admin)
 exports.createProperty = async (req, res, next) => {
     try {
+        // Enforce the dealer phone from the authenticated user session
+        req.body.dealerPhone = req.user.phone;
+
+        // Handle base64 photo uploads if present
+        if (req.body.photos && Array.isArray(req.body.photos)) {
+            req.body.photos = await Promise.all(req.body.photos.map(p => saveBase64File(p)));
+        }
+
         const property = await Property.create(req.body);
 
         res.status(201).json({
             success: true,
             data: property
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// @desc    Update property
+// @route   PUT /api/properties/:id
+// @access  Private (Dealer/Admin)
+exports.updateProperty = async (req, res, next) => {
+    try {
+        let property = await Property.findById(req.params.id);
+
+        if (!property) {
+            return next(new ErrorResponse(`Property not found with id of ${req.params.id}`, 404));
+        }
+
+        // Make sure user is property owner or admin
+        if (property.dealerPhone !== req.user.phone && req.user.role !== 'admin') {
+            return next(new ErrorResponse(`User not authorized to update this property`, 401));
+        }
+
+        // Handle base64 photos if they are updated
+        if (req.body.photos && Array.isArray(req.body.photos)) {
+            req.body.photos = await Promise.all(req.body.photos.map(p => saveBase64File(p)));
+        }
+
+        property = await Property.findByIdAndUpdate(req.params.id, req.body, {
+            new: true,
+            runValidators: true
+        });
+
+        res.status(200).json({
+            success: true,
+            data: property
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// @desc    Delete property
+// @route   DELETE /api/properties/:id
+// @access  Private (Dealer/Admin)
+exports.deleteProperty = async (req, res, next) => {
+    try {
+        const property = await Property.findById(req.params.id);
+
+        if (!property) {
+            return next(new ErrorResponse(`Property not found with id of ${req.params.id}`, 404));
+        }
+
+        // Make sure user is property owner or admin
+        if (property.dealerPhone !== req.user.phone && req.user.role !== 'admin') {
+            return next(new ErrorResponse(`User not authorized to delete this property`, 401));
+        }
+
+        await property.deleteOne();
+
+        res.status(200).json({
+            success: true,
+            data: {}
         });
     } catch (err) {
         next(err);

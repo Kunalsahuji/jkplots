@@ -15,20 +15,118 @@ import {
   Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import api from "@/utils/api";
+
+const formatPrice = (val) => {
+  if (!val) return "₹—";
+  if (typeof val === "string") return val;
+  if (val >= 10000000) return `₹${(val / 10000000).toFixed(2)} Cr`;
+  if (val >= 100000) return `₹${(val / 100000).toFixed(1)} L`;
+  return `₹${val.toLocaleString()}`;
+};
+
+const resolveImage = (img) => {
+  if (!img) return "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80";
+  if (img.startsWith("http") || img.startsWith("data:")) return img;
+  return `http://localhost:5000${img}`;
+};
+
+function PropertyDetailSkeleton() {
+  return (
+    <div className="container-px mx-auto max-w-7xl py-12 animate-pulse space-y-8">
+      <div className="h-6 w-32 bg-secondary rounded" />
+      <div className="grid gap-3 md:grid-cols-[2fr_1fr]">
+        <div className="aspect-[16/10] bg-secondary rounded-2xl" />
+        <div className="grid grid-cols-3 gap-3 md:grid-cols-1">
+          <div className="aspect-[4/3] bg-secondary rounded-xl" />
+          <div className="aspect-[4/3] bg-secondary rounded-xl" />
+          <div className="aspect-[4/3] bg-secondary rounded-xl" />
+        </div>
+      </div>
+      <div className="h-10 w-2/3 bg-secondary rounded" />
+      <div className="h-20 w-full bg-secondary rounded-2xl" />
+    </div>
+  );
+}
 
 export default function PropertyDetailPage() {
   const { id } = useParams();
-  const p = properties.find((x) => x.id === id);
+  const [property, setProperty] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [active, setActive] = useState(0);
+  const [loanAmt, setLoanAmt] = useState(0);
+  const [years, setYears] = useState(20);
+  const [rate, setRate] = useState(8.5);
 
+  useEffect(() => {
+    const mock = properties.find((x) => x.id === id);
+    if (mock) {
+      setProperty(mock);
+      setLoading(false);
+      return;
+    }
+
+    const fetchDetail = async () => {
+      setLoading(true);
+      try {
+        const { data } = await api.get(`/properties/${id}`);
+        if (data.success) {
+          setProperty(data.data);
+        }
+      } catch (err) {
+        console.error("Failed to load property details:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDetail();
+  }, [id]);
+
+  useEffect(() => {
+    if (property) {
+      const priceVal = property.price || 0;
+      setLoanAmt(priceVal ? Math.round(priceVal * 0.8) : 5000000);
+    }
+  }, [property]);
+
+  if (loading) {
+    return <PropertyDetailSkeleton />;
+  }
+
+  const p = property;
   if (!p) {
     return <Navigate to="/" replace />;
   }
 
-  const [active, setActive] = useState(0);
-  const [loanAmt, setLoanAmt] = useState(Math.round(p.price * 0.8));
-  const [years, setYears] = useState(20);
-  const [rate, setRate] = useState(8.5);
+  // Unified schema fields
+  const title = p.title;
+  const purpose = p.purpose;
+  const type = p.type;
+  const city = p.city;
+  const locality = p.locality || p.area;
+  const photos = p.photos && p.photos.length > 0 ? p.photos.map(resolveImage) : (p.gallery || []);
+  const bedrooms = p.bedrooms || p.beds || 0;
+  const areaSqft = p.area || p.sqft || 0;
+  const priceVal = p.price || 0;
+  const priceLabel = formatPrice(p.price || p.priceLabel);
+  const description = p.description || `Excellent ${type} located in premium locality of ${locality}, ${city}. Ideal investment opportunity with verified details.`;
+  const amenities = p.amenities || ["Water Supply", "Power Backup", "Security", "Parking Slot"];
+
+  const dealerName = p.dealer?.name || "Verified Agent";
+  const dealerPhone = p.contactNumber || p.dealerPhone || p.dealer?.phone || "9876543210";
+  const dealerInitial = dealerName.charAt(0).toUpperCase();
+  const isDealerVerified = p.dealer?.verified || true;
+
+  const handleWhatsApp = () => {
+    const cleanPhone = dealerPhone.replace(/\D/g, "");
+    const text = encodeURIComponent(`Hi, I'm interested in your property "${title}" listed on JKPlot.`);
+    window.open(`https://wa.me/91${cleanPhone}?text=${text}`, "_blank");
+  };
+
+  const handleCall = () => {
+    window.open(`tel:${dealerPhone}`, "_self");
+  };
 
   const monthlyRate = rate / 12 / 100;
   const months = years * 12;
@@ -47,19 +145,19 @@ export default function PropertyDetailPage() {
         <nav className="mb-4 text-xs text-muted-foreground">
           <Link to="/" className="hover:text-foreground">Home</Link> /{" "}
           <Link to="/properties" className="hover:text-foreground">Properties</Link> /{" "}
-          <span className="text-foreground">{p.title}</span>
+          <span className="text-foreground">{title}</span>
         </nav>
         <div className="grid gap-3 md:grid-cols-[2fr_1fr]">
           <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-muted md:aspect-[16/10]">
-            <img src={p.gallery[active]} alt={p.title} className="h-full w-full object-cover" />
-            {p.verified && (
+            <img src={photos[active] || resolveImage(null)} alt={title} className="h-full w-full object-cover" />
+            {(p.verified || p.isActive) && (
               <span className="absolute left-4 top-4 flex items-center gap-1 rounded-full bg-success px-3 py-1.5 text-xs font-semibold text-success-foreground">
                 <BadgeCheck className="h-3.5 w-3.5" /> Verified
               </span>
             )}
           </div>
           <div className="grid grid-cols-3 gap-3 md:grid-cols-1">
-            {p.gallery.slice(0, 3).map((g, i) => (
+            {photos.slice(0, 3).map((g, i) => (
               <button
                 key={i}
                 onClick={() => setActive(i)}
@@ -81,11 +179,11 @@ export default function PropertyDetailPage() {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary">
-                  For {p.purpose} · {p.type}
+                  For {purpose} · {type}
                 </span>
-                <h1 className="mt-3 font-display text-3xl font-bold md:text-4xl">{p.title}</h1>
+                <h1 className="mt-3 font-display text-3xl font-bold md:text-4xl">{title}</h1>
                 <p className="mt-2 flex items-center gap-1.5 text-muted-foreground">
-                  <MapPin className="h-4 w-4" /> {p.area}, {p.city}
+                  <MapPin className="h-4 w-4" /> {locality}, {city}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -99,17 +197,19 @@ export default function PropertyDetailPage() {
             </div>
 
             <div className="mt-4 flex items-baseline gap-3">
-              <div className="font-display text-4xl font-bold text-primary">{p.priceLabel}</div>
-              <div className="text-sm text-muted-foreground">· {Math.round(p.price / p.sqft).toLocaleString()}/sqft</div>
+              <div className="font-display text-4xl font-bold text-primary">{priceLabel}</div>
+              {areaSqft > 0 && priceVal > 0 && (
+                <div className="text-sm text-muted-foreground">· {Math.round(priceVal / areaSqft).toLocaleString()}/sqft</div>
+              )}
             </div>
           </div>
 
           {/* Stats */}
           <div className="grid grid-cols-2 gap-3 rounded-2xl border border-border bg-card p-5 sm:grid-cols-4">
             {[
-              [Bed, p.beds || "—", "Bedrooms"],
+              [Bed, bedrooms || "—", "Bedrooms"],
               [Bath, p.baths || "—", "Bathrooms"],
-              [Maximize, p.sqft.toLocaleString(), "Sq ft"],
+              [Maximize, areaSqft ? areaSqft.toLocaleString() : "—", "Sq ft"],
               [Calendar, p.readyToMove ? "Ready" : "Soon", "Status"],
             ].map(([I, v, l], i) => (
               <div key={i} className="flex items-center gap-3">
@@ -126,13 +226,13 @@ export default function PropertyDetailPage() {
 
           {/* Description */}
           <Section title="About this property">
-            <p className="leading-relaxed text-muted-foreground">{p.description}</p>
+            <p className="leading-relaxed text-muted-foreground">{description}</p>
           </Section>
 
           {/* Amenities */}
           <Section title="Amenities">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {p.amenities.map((a) => (
+              {amenities.map((a) => (
                 <div key={a} className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2.5 text-sm">
                   <span className="h-2 w-2 rounded-full bg-success" /> {a}
                 </div>
@@ -146,7 +246,7 @@ export default function PropertyDetailPage() {
               <div className="flex h-full flex-col items-center justify-center text-center">
                 <MapPin className="h-10 w-10 text-primary" />
                 <p className="mt-2 font-semibold">
-                  {p.area}, {p.city}
+                  {locality}, {city}
                 </p>
                 <p className="text-xs text-muted-foreground">Map preview · Connect Google Maps API</p>
               </div>
@@ -161,7 +261,7 @@ export default function PropertyDetailPage() {
                   <input
                     type="range"
                     min={500000}
-                    max={p.price}
+                    max={priceVal || 100000000}
                     step={100000}
                     value={loanAmt}
                     onChange={(e) => setLoanAmt(+e.target.value)}
@@ -204,11 +304,11 @@ export default function PropertyDetailPage() {
             <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
               <div className="flex items-center gap-3">
                 <div className="grid h-12 w-12 place-items-center rounded-full bg-gradient-hero text-primary-foreground font-bold">
-                  {p.dealer.name.charAt(0)}
+                  {dealerInitial}
                 </div>
                 <div className="flex-1">
-                  <div className="font-semibold">{p.dealer.name}</div>
-                  {p.dealer.verified && (
+                  <div className="font-semibold">{dealerName}</div>
+                  {isDealerVerified && (
                     <div className="flex items-center gap-1 text-xs text-success">
                       <BadgeCheck className="h-3 w-3" /> Verified Dealer
                     </div>
@@ -216,11 +316,11 @@ export default function PropertyDetailPage() {
                 </div>
               </div>
               <div className="mt-5 space-y-2">
-                <Button className="w-full gap-2 rounded-xl bg-success text-success-foreground hover:bg-success/90">
+                <Button onClick={handleWhatsApp} className="w-full gap-2 rounded-xl bg-success text-success-foreground hover:bg-success/90">
                   <MessageCircle className="h-4 w-4" /> WhatsApp Dealer
                 </Button>
-                <Button variant="outline" className="w-full gap-2 rounded-xl">
-                  <Phone className="h-4 w-4" /> {p.dealer.phone}
+                <Button onClick={handleCall} variant="outline" className="w-full gap-2 rounded-xl">
+                  <Phone className="h-4 w-4" /> {dealerPhone}
                 </Button>
               </div>
               <form onSubmit={(e) => e.preventDefault()} className="mt-4 space-y-2 border-t border-border pt-4">
@@ -247,7 +347,7 @@ export default function PropertyDetailPage() {
       {/* Similar */}
       {similar.length > 0 && (
         <section className="container-px mx-auto max-w-7xl py-10">
-          <h2 className="font-display text-2xl font-bold md:text-3xl">Similar properties in {p.city}</h2>
+          <h2 className="font-display text-2xl font-bold md:text-3xl">Similar properties in {city}</h2>
           <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {similar.map((s) => (
               <PropertyCard key={s.id} p={s} />
@@ -261,12 +361,12 @@ export default function PropertyDetailPage() {
         <div className="flex items-center gap-2">
           <div className="flex-1">
             <div className="text-xs text-muted-foreground">Price</div>
-            <div className="font-display text-lg font-bold text-primary">{p.priceLabel}</div>
+            <div className="font-display text-lg font-bold text-primary">{priceLabel}</div>
           </div>
-          <Button className="flex-1 gap-2 rounded-xl bg-success text-success-foreground">
+          <Button onClick={handleWhatsApp} className="flex-1 gap-2 rounded-xl bg-success text-success-foreground">
             <MessageCircle className="h-4 w-4" /> WhatsApp
           </Button>
-          <Button className="flex-1 gap-2 rounded-xl bg-primary">
+          <Button onClick={handleCall} className="flex-1 gap-2 rounded-xl bg-primary">
             <Phone className="h-4 w-4" /> Call
           </Button>
         </div>

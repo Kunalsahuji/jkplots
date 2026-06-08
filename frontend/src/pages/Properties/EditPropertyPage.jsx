@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Upload, Check } from "lucide-react";
+import { Upload, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 
-export default function PostPropertyPage() {
+export default function EditPropertyPage() {
+  const { id } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading } = useAuth();
 
+  const [fetching, setFetching] = useState(true);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [purpose, setPurpose] = useState("Buy");
@@ -18,20 +20,60 @@ export default function PostPropertyPage() {
   const [locality, setLocality] = useState("");
   const [bedrooms, setBedrooms] = useState("3");
   const [area, setArea] = useState("1200");
-  const [price, setPrice] = useState("9500000");
+  const [price, setPrice] = useState("");
   const [contactNumber, setContactNumber] = useState("");
   const [photos, setPhotos] = useState([]);
 
   useEffect(() => {
     if (!isLoading) {
       if (!isAuthenticated) {
-        navigate("/auth?redirect=/post-property");
-      } else if (user?.role !== "dealer") {
-        toast.error("Only dealers can post properties.");
-        navigate("/");
+        navigate(`/auth?redirect=/edit-property/${id}`);
       }
     }
-  }, [user, isAuthenticated, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, navigate, id]);
+
+  useEffect(() => {
+    const fetchPropertyDetails = async () => {
+      try {
+        const { data } = await api.get(`/properties/${id}`);
+        if (data.success) {
+          const p = data.data;
+          // Verify ownership: must be the dealer who created it, or admin
+          if (p.dealerPhone !== user?.phone && user?.role !== "admin") {
+            toast.error("You are not authorized to edit this listing.");
+            navigate("/dashboard");
+            return;
+          }
+          setTitle(p.title || "");
+          setDescription(p.description || "");
+          setPurpose(p.purpose || "Buy");
+          setType(p.type || "Apartment");
+          setCity(p.city || "Srinagar");
+          setLocality(p.locality || "");
+          setBedrooms(String(p.bedrooms || 0));
+          setArea(String(p.area || 0));
+          setPrice(String(p.price || ""));
+          
+          let initialContact = p.contactNumber || "";
+          if (initialContact.startsWith("+91")) {
+            initialContact = initialContact.slice(3);
+          }
+          setContactNumber(initialContact);
+          setPhotos(p.photos || []);
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load property details for editing.");
+        navigate("/dashboard");
+      } finally {
+        setFetching(false);
+      }
+    };
+
+    if (user) {
+      fetchPropertyDetails();
+    }
+  }, [id, user, navigate]);
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
@@ -58,7 +100,7 @@ export default function PostPropertyPage() {
     const numericPrice = Number(String(price).replace(/\D/g, "")) || 0;
 
     try {
-      const { data } = await api.post("/properties", {
+      const { data } = await api.put(`/properties/${id}`, {
         title: finalTitle,
         description,
         purpose,
@@ -70,14 +112,14 @@ export default function PostPropertyPage() {
         price: numericPrice,
         contactNumber: `+91${contactNumber}`,
         photos,
-        dealerPhone: user ? user.phone : ""
+        dealerPhone: user?.phone
       });
 
       if (data.success) {
-        toast.success("Property listed successfully!");
-        navigate("/");
+        toast.success("Property updated successfully!");
+        navigate(user?.role === "admin" ? "/admin/dashboard" : "/dashboard");
       } else {
-        toast.error(data.error || "Failed to post property.");
+        toast.error(data.error || "Failed to update property.");
       }
     } catch (err) {
       const data = err.response?.data;
@@ -85,38 +127,24 @@ export default function PostPropertyPage() {
     }
   };
 
-  const steps = ["Basic Details", "Location", "Property Info", "Photos & Pricing", "Publish"];
+  if (fetching || isLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="container-px mx-auto max-w-5xl py-12">
       <div className="text-center">
-        <span className="rounded-full bg-accent/20 px-3 py-1 text-xs font-semibold text-accent-foreground">
-          100% FREE LISTING
-        </span>
-        <h1 className="mt-4 font-display text-4xl font-bold md:text-5xl">Sell or rent your property faster</h1>
-        <p className="mt-3 text-muted-foreground">Reach thousands of verified buyers across J&amp;K in minutes.</p>
-      </div>
-
-      {/* Stepper */}
-      <div className="mt-10 hidden items-center justify-between md:flex">
-        {steps.map((s, i) => (
-          <div key={s} className="flex flex-1 items-center">
-            <div
-              className={`grid h-9 w-9 place-items-center rounded-full text-xs font-bold ${
-                i === 0 ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
-              }`}
-            >
-              {i + 1}
-            </div>
-            <div className="ml-2 text-sm font-medium">{s}</div>
-            {i < steps.length - 1 && <div className="mx-3 h-px flex-1 bg-border" />}
-          </div>
-        ))}
+        <h1 className="font-display text-4xl font-bold md:text-5xl">Edit Property Listing</h1>
+        <p className="mt-3 text-muted-foreground">Modify details or update photos for your property.</p>
       </div>
 
       <div className="mt-10 rounded-3xl border border-border bg-card p-6 md:p-10">
-        <h2 className="font-display text-2xl font-bold">Basic details</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Tell us about your property</p>
+        <h2 className="font-display text-2xl font-bold">Property Details</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Change details of your listed property</p>
 
         <form onSubmit={handleSubmit} className="mt-6 grid gap-5 md:grid-cols-2">
           <div className="md:col-span-2">
@@ -172,8 +200,6 @@ export default function PostPropertyPage() {
                 setType(val);
                 if (val === "Plot" || val === "Commercial") {
                   setBedrooms("0");
-                } else {
-                  setBedrooms("3");
                 }
               }}
               className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm"
@@ -232,7 +258,7 @@ export default function PostPropertyPage() {
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
-              placeholder="₹95,00,000"
+              placeholder="e.g. 9500000"
             />
           </Field>
           <Field label="Contact number">
@@ -285,15 +311,8 @@ export default function PostPropertyPage() {
           </div>
 
           <div className="md:col-span-2 mt-8 flex flex-wrap items-center justify-between gap-3">
-            <ul className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">
-              {["Free forever", "Verified listing badge", "WhatsApp leads"].map((f) => (
-                <li key={f} className="flex items-center gap-1">
-                  <Check className="h-3.5 w-3.5 text-success" /> {f}
-                </li>
-              ))}
-            </ul>
             <Button type="submit" className="rounded-full bg-primary px-8 py-6 text-base font-semibold">
-              Submit Property
+              Save Changes
             </Button>
           </div>
         </form>
