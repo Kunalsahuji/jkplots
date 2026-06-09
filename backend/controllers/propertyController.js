@@ -299,3 +299,113 @@ exports.deleteProperty = async (req, res, next) => {
         next(err);
     }
 };
+
+// @desc    Add a review to a property
+// @route   POST /api/properties/:id/reviews
+// @access  Private
+exports.addPropertyReview = async (req, res, next) => {
+    try {
+        const { rating, comment } = req.body;
+
+        if (!rating || rating < 1 || rating > 5) {
+            return next(new ErrorResponse('Please provide a rating between 1 and 5', 400));
+        }
+
+        const property = await Property.findById(req.params.id);
+
+        if (!property) {
+            return next(new ErrorResponse(`Property not found with id of ${req.params.id}`, 404));
+        }
+
+        const review = {
+            userName: req.user.name || 'Anonymous User',
+            rating: Number(rating),
+            comment: comment || '',
+            createdAt: new Date()
+        };
+
+        if (!property.reviews) {
+            property.reviews = [];
+        }
+
+        property.reviews.push(review);
+        await property.save();
+
+        res.status(201).json({
+            success: true,
+            data: property.reviews,
+            message: 'Review added successfully'
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// @desc    Update a review on a property
+// @route   PUT /api/properties/:id/reviews/:reviewId
+// @access  Private
+exports.updatePropertyReview = async (req, res, next) => {
+    try {
+        const { rating, comment } = req.body;
+        const property = await Property.findById(req.params.id);
+
+        if (!property) {
+            return next(new ErrorResponse(`Property not found with id of ${req.params.id}`, 404));
+        }
+
+        const review = property.reviews.id(req.params.reviewId);
+        if (!review) {
+            return next(new ErrorResponse('Review not found', 404));
+        }
+
+        if (review.userName !== req.user.name && req.user.role !== 'admin') {
+            return next(new ErrorResponse('User not authorized to update this review', 401));
+        }
+
+        if (rating) review.rating = Number(rating);
+        if (comment !== undefined) review.comment = comment;
+
+        await property.save();
+
+        res.status(200).json({
+            success: true,
+            data: property.reviews,
+            message: 'Review updated successfully'
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// @desc    Delete a review from a property
+// @route   DELETE /api/properties/:id/reviews/:reviewId
+// @access  Private
+exports.deletePropertyReview = async (req, res, next) => {
+    try {
+        const property = await Property.findById(req.params.id);
+
+        if (!property) {
+            return next(new ErrorResponse(`Property not found with id of ${req.params.id}`, 404));
+        }
+
+        const review = property.reviews.id(req.params.reviewId);
+        if (!review) {
+            return next(new ErrorResponse('Review not found', 404));
+        }
+
+        if (review.userName !== req.user.name && req.user.role !== 'admin') {
+            return next(new ErrorResponse('User not authorized to delete this review', 401));
+        }
+
+        review.deleteOne();
+        await property.save();
+
+        res.status(200).json({
+            success: true,
+            data: property.reviews,
+            message: 'Review deleted successfully'
+        });
+    } catch (err) {
+        next(err);
+    }
+};

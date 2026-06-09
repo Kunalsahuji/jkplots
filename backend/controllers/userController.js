@@ -143,3 +143,48 @@ exports.getUsers = asyncHandler(async (req, res, next) => {
         data: users.map(sanitizeUser),
     });
 });
+
+// ─── @desc    Toggle save / unsave a property ─────────────────────────────────
+// ─── @route   POST /api/users/save-property/:propertyId
+// ─── @access  Private
+exports.toggleSaveProperty = asyncHandler(async (req, res, next) => {
+    const { propertyId } = req.params;
+    const user = await User.findById(req.user.id);
+
+    const idx = user.savedProperties.findIndex(id => id.toString() === propertyId);
+    let saved;
+    if (idx === -1) {
+        user.savedProperties.push(propertyId);
+        saved = true;
+    } else {
+        user.savedProperties.splice(idx, 1);
+        saved = false;
+    }
+    await user.save({ validateModifiedOnly: true });
+
+    res.status(200).json({
+        success: true,
+        saved,
+        savedProperties: user.savedProperties,
+        message: saved ? 'Property saved to shortlist' : 'Property removed from shortlist',
+    });
+});
+
+// ─── @desc    Update current user profile (name) ─────────────────────────────
+// ─── @route   PUT /api/users/me
+// ─── @access  Private
+exports.updateProfile = asyncHandler(async (req, res, next) => {
+    const { name } = req.body;
+    if (!name || name.trim().length < 2) {
+        return next(new ErrorResponse('Name must be at least 2 characters', 400));
+    }
+    const user = await User.findById(req.user.id);
+    user.name = name.trim();
+    await user.save({ validateModifiedOnly: true });
+
+    res.status(200).json({
+        success: true,
+        data: sanitizeUser(user),
+        message: 'Profile updated successfully',
+    });
+});

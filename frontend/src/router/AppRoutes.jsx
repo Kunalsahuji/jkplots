@@ -110,11 +110,11 @@ export default function AppRoutes() {
             <Route element={<AppLayout />}>
                 {/* Public */}
                 <Route path="/" element={<HomePage />} />
+                <Route path="/properties" element={<PropertyListPage />} />
+                <Route path="/properties/:id" element={<PropertyDetailPage />} />
 
                 {/* Protected — require login */}
                 <Route path="/explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
-                <Route path="/properties" element={<ProtectedRoute><PropertyListPage /></ProtectedRoute>} />
-                <Route path="/properties/:id" element={<ProtectedRoute><PropertyDetailPage /></ProtectedRoute>} />
                 <Route path="/post-property" element={<ProtectedRoute><PostPropertyPage /></ProtectedRoute>} />
                 <Route path="/edit-property/:id" element={<ProtectedRoute><EditPropertyPage /></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />

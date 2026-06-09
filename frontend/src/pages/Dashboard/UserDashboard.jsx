@@ -27,13 +27,22 @@ import api from "@/utils/api";
 import { toast } from "sonner";
 
 export default function UserDashboard() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const isDealer = user?.role === "dealer";
   const isAdmin = user?.role === "admin";
   const userInitials = user?.name ? user.name.charAt(0).toUpperCase() : "U";
 
   const [activeTab, setActiveTab] = useState("Overview");
+  const [newName, setNewName] = useState(user?.name || "");
+  const [updatingProfile, setUpdatingProfile] = useState(false);
   
+  // Keep input in sync with loaded profile
+  useEffect(() => {
+    if (user?.name) {
+      setNewName(user.name);
+    }
+  }, [user]);
+
   // Data states
   const [dbProperties, setDbProperties] = useState([]);
   const [allProperties, setAllProperties] = useState([]);
@@ -160,7 +169,9 @@ export default function UserDashboard() {
   };
 
   // Filter saved properties
-  const savedProperties = allProperties.filter(p => user?.savedProperties?.includes(p._id));
+  const savedProperties = allProperties.filter(p =>
+    user?.savedProperties?.some(savedId => (savedId?._id || savedId) === p._id)
+  );
 
   // Enquiries categorisation
   const receivedEnquiries = enquiries.filter(e => e.dealerPhone === user?.phone);
@@ -631,11 +642,34 @@ export default function UserDashboard() {
                 <h2 className="font-display text-xl font-bold">Account Settings</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">Manage user preferences and contact numbers</p>
               </div>
-              <form onSubmit={(e) => { e.preventDefault(); toast.success("Settings saved successfully!"); }} className="space-y-4 max-w-md">
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!newName || newName.trim().length < 2) {
+                    toast.error("Name must be at least 2 characters");
+                    return;
+                  }
+                  setUpdatingProfile(true);
+                  try {
+                    const { data } = await api.put("/users/me", { name: newName });
+                    if (data.success) {
+                      toast.success("Profile updated successfully!");
+                      await refreshUser();
+                    }
+                  } catch (err) {
+                    toast.error(err.response?.data?.error || "Failed to update profile");
+                  } finally {
+                    setUpdatingProfile(false);
+                  }
+                }}
+                className="space-y-4 max-w-md"
+              >
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Full Name</label>
                   <input
-                    defaultValue={user?.name}
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder="Enter full name"
                     className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
                   />
                 </div>
@@ -643,7 +677,7 @@ export default function UserDashboard() {
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mobile Number</label>
                   <input
                     disabled
-                    value={user?.phone}
+                    value={user?.phone || ""}
                     className="w-full rounded-xl border border-border bg-muted/50 px-4 py-2.5 text-sm outline-none cursor-not-allowed"
                   />
                 </div>
@@ -651,12 +685,16 @@ export default function UserDashboard() {
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Profile Role</label>
                   <input
                     disabled
-                    value={user?.role}
+                    value={user?.role || ""}
                     className="w-full rounded-xl border border-border bg-muted/50 px-4 py-2.5 text-sm outline-none cursor-not-allowed capitalize"
                   />
                 </div>
-                <button type="submit" className="rounded-full bg-primary text-primary-foreground px-6 py-2.5 text-xs font-semibold shadow-md hover:bg-primary/95 transition-all">
-                  Save Settings
+                <button
+                  type="submit"
+                  disabled={updatingProfile}
+                  className="rounded-full bg-primary text-primary-foreground px-6 py-2.5 text-xs font-semibold shadow-md hover:bg-primary/95 transition-all disabled:opacity-50"
+                >
+                  {updatingProfile ? "Saving..." : "Save Settings"}
                 </button>
               </form>
             </div>

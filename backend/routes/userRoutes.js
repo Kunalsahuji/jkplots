@@ -7,6 +7,8 @@ const {
     getMe,
     logout,
     getUsers,
+    toggleSaveProperty,
+    updateProfile,
 } = require('../controllers/userController');
 
 const { protect, authorize } = require('../middleware/auth');
@@ -19,7 +21,9 @@ router.post('/verify-otp', verifyOtpValidation, validate, verifyOtp);
 
 // ─── Protected routes (JWT required) ─────────────────────────────────────────
 router.get('/me', protect, getMe);
+router.put('/me', protect, updateProfile);
 router.post('/logout', protect, logout);
 router.get('/', protect, authorize('admin'), getUsers);
+router.post('/save-property/:propertyId', protect, toggleSaveProperty);
 
 module.exports = router;

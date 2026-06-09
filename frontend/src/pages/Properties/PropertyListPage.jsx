@@ -6,6 +6,7 @@ import { SearchBar } from "@/components/site/SearchBar";
 import { SlidersHorizontal, LayoutGrid, List, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import api from "@/utils/api";
+import { motion } from "framer-motion";
 
 const cityOpts = ["All", "Srinagar", "Jammu", "Gulmarg", "Pahalgam"];
 const typeOpts = ["All", "Villa", "Apartment", "Plot", "Commercial"];
@@ -120,7 +121,12 @@ export default function PropertyListPage() {
   );
 
   return (
-    <div className="bg-secondary/30">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+      className="bg-secondary/30"
+    >
       <div className="border-b border-border bg-background">
         <div className="container-px mx-auto max-w-7xl py-6">
           <SearchBar compact />
@@ -235,7 +241,7 @@ export default function PropertyListPage() {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 

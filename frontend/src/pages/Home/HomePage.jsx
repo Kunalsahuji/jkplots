@@ -67,7 +67,7 @@ export default function HomePage() {
   return (
     <div>
       {/* HERO */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden min-h-[500px] md:min-h-[600px] lg:min-h-[700px] flex items-center">
         <div className="absolute inset-0">
           {heroImages.map((img, index) => (
             <img
@@ -76,14 +76,27 @@ export default function HomePage() {
               alt={`Kashmir valley villa slide ${index + 1}`}
               width={1920}
               height={1080}
-              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${
-                index === bgIndex ? "opacity-100" : "opacity-0"
+              className={`absolute inset-0 h-full w-full object-cover transition-all duration-[5000ms] ease-out ${
+                index === bgIndex ? "opacity-100 scale-105" : "opacity-0 scale-100"
               }`}
             />
           ))}
-          <div className="absolute inset-0 bg-gradient-to-b from-foreground/40 via-foreground/30 to-foreground/80" />
+          <div className="absolute inset-0 bg-gradient-to-b from-foreground/50 via-foreground/35 to-foreground/85" />
+          {/* Navigation Dots */}
+          <div className="absolute bottom-6 right-6 flex gap-2 z-10">
+            {heroImages.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setBgIndex(i)}
+                className={`h-2 w-2 rounded-full transition-all duration-300 ${
+                  i === bgIndex ? "bg-accent w-6" : "bg-background/40 hover:bg-background/80"
+                }`}
+                aria-label={`Go to slide ${i + 1}`}
+              />
+            ))}
+          </div>
         </div>
-        <div className="relative container-px mx-auto max-w-7xl pb-20 pt-16 md:pb-28 md:pt-20 lg:pb-32 lg:pt-24">
+        <div className="relative container-px mx-auto w-full max-w-7xl pb-16 pt-16 md:pb-24 md:pt-20 lg:pb-28 lg:pt-24 z-10">
           <div className="max-w-3xl text-background">
             <span className="inline-flex items-center gap-2 rounded-full border border-background/30 bg-background/10 px-3 py-1.5 text-xs font-medium backdrop-blur">
               <Sparkles className="h-3.5 w-3.5 text-accent" /> J&amp;K's most trusted marketplace

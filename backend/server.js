@@ -5,11 +5,14 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
+
+// ─── Load env first (before any other imports that read env) ──────────────────
+dotenv.config();
+
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/error');
-
-// ─── Load environment variables ───────────────────────────────────────────────
-dotenv.config();
+const logger = require('./utils/logger');
 
 // ─── Connect to MongoDB ───────────────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'test') {
@@ -18,19 +21,29 @@ if (process.env.NODE_ENV !== 'test') {
 
 const app = express();
 
-// ─── Security Headers (Helmet) ────────────────────────────────────────────────
-// Sets various HTTP headers to protect against common web vulnerabilities
+// ─── Security Headers ─────────────────────────────────────────────────────────
 app.use(helmet());
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
-// credentials: true is required for httpOnly cookie auth to work cross-origin
 app.use(
     cors({
-        origin: [
-            'http://localhost:5173',
-            process.env.FRONTEND_URL,
-        ].filter(Boolean),
-        credentials: true, // Required for cookies to be sent cross-origin
+        origin: function (origin, callback) {
+            if (!origin) return callback(null, true); // Allow non-browser clients
+            const allowed = [
+                'http://localhost:5173',
+                'http://localhost:5174',
+                'http://127.0.0.1:5173',
+                process.env.FRONTEND_URL,
+            ].filter(Boolean);
+            const isLocal = origin.startsWith('http://192.168.') || origin.startsWith('http://10.');
+            if (allowed.includes(origin) || isLocal) {
+                callback(null, true);
+            } else {
+                logger.warn(`🚫 CORS blocked: ${origin}`);
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
+        credentials: true,
     })
 );
 
@@ -39,16 +52,12 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ─── Cookie Parser ────────────────────────────────────────────────────────────
-// Required to read httpOnly JWT cookies from requests
 app.use(cookieParser());
 
-// Serve uploads folder statically
-const path = require('path');
+// ─── Static uploads ──────────────────────────────────────────────────────────
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ─── MongoDB Query Injection Sanitizer ───────────────────────────────────────
-// Strips any keys containing '$' or '.' from req.body, req.params, req.query
-// Custom in-place implementation to support Express 5 query read-only getters
 app.use((req, res, next) => {
     const sanitize = (obj) => {
         if (obj instanceof Object) {
@@ -68,39 +77,33 @@ app.use((req, res, next) => {
 });
 
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
-// Auth routes: strict (prevents OTP brute-force attacks)
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10,                   // 10 attempts per 15 min per IP
-    message: {
-        success: false,
-        error: 'Too many requests from this IP. Please try again after 15 minutes.',
-    },
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: { success: false, error: 'Too many requests. Retry after 15 minutes.' },
     standardHeaders: true,
     legacyHeaders: false,
 });
-
-// General API: relaxed (allows normal browsing)
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 200,
-    message: {
-        success: false,
-        error: 'Too many requests. Please slow down.',
-    },
+    message: { success: false, error: 'Too many requests. Slow down.' },
     standardHeaders: true,
     legacyHeaders: false,
 });
 
-// Apply rate limiters
 app.use('/api/users/send-otp', authLimiter);
 app.use('/api/users/verify-otp', authLimiter);
 app.use('/api/', apiLimiter);
 
-// ─── Dev Logging ──────────────────────────────────────────────────────────────
-if (process.env.NODE_ENV === 'development') {
-    app.use(morgan('dev'));
-}
+// ─── HTTP Request Logging (morgan → winston) ──────────────────────────────────
+app.use(morgan('dev', { stream: logger.stream }));
+
+// ─── Incoming request logger ──────────────────────────────────────────────────
+app.use((req, res, next) => {
+    logger.debug(`→ ${req.method} ${req.originalUrl}`);
+    next();
+});
 
 // ─── Mount Routers ────────────────────────────────────────────────────────────
 const propertyRoutes = require('./routes/propertyRoutes');
@@ -117,29 +120,38 @@ app.use('/api/notifications', notificationRoutes);
 app.get('/api/health', (req, res) => {
     res.status(200).json({
         success: true,
-        message: 'Server is healthy',
+        message: 'JKPlot API is healthy',
         environment: process.env.NODE_ENV,
+        uptime: `${Math.round(process.uptime())}s`,
     });
 });
 
-// ─── Global Error Handler (must be after all routes) ─────────────────────────
+// ─── Global Error Handler ─────────────────────────────────────────────────────
 app.use(errorHandler);
 
 // ─── Start Server ─────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
 
 const server = app.listen(PORT, () => {
-    console.log(`\n🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+    logger.info(`🚀 JKPlot API running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
+    logger.info(`🌐 Accepting frontend from: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+
+    // Check Maps API key
+    const mapsKey = process.env.GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAP_API_KEY;
+    if (mapsKey && mapsKey.trim()) {
+        logger.info('✅ Google Maps API key loaded');
+    } else {
+        logger.warn('⚠️  GOOGLE_MAPS_API_KEY not set — location features will be limited');
+    }
 });
 
-// ─── Handle Unhandled Promise Rejections ──────────────────────────────────────
+// ─── Process Error Handlers ───────────────────────────────────────────────────
 process.on('unhandledRejection', (err) => {
-    console.error(`\n❌ Unhandled Rejection: ${err.message}`);
+    logger.error(`Unhandled Rejection: ${err.message}`);
     server.close(() => process.exit(1));
 });
 
-// ─── Handle Uncaught Exceptions ───────────────────────────────────────────────
 process.on('uncaughtException', (err) => {
-    console.error(`\n❌ Uncaught Exception: ${err.message}`);
+    logger.error(`Uncaught Exception: ${err.message}`);
     process.exit(1);
 });

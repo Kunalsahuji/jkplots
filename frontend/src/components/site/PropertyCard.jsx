@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
 import { MapPin, BadgeCheck, Heart } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import api from "@/utils/api";
+import { toast } from "sonner";
 
 const formatPrice = (val) => {
   if (!val) return "₹—";
@@ -17,15 +20,36 @@ const resolveImage = (img) => {
 };
 
 export function PropertyCard({ p }) {
-  const [saved, setSaved] = useState(false);
-  
+  const { user, refreshUser } = useAuth();
   const id = p._id || p.id;
+  const isSaved = user?.savedProperties?.some(savedId => savedId === id || savedId?._id === id) || false;
+  
   const title = p.title;
   const image = resolveImage(p.photos?.[0] || p.image);
   const area = p.locality || p.area;
   const city = p.city;
   const priceLabel = formatPrice(p.price || p.priceLabel);
   const type = p.type;
+
+  const handleSaveToggle = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) {
+      toast.error("Please log in to save properties.");
+      return;
+    }
+
+    try {
+      const { data } = await api.post(`/users/save-property/${id}`);
+      if (data.success) {
+        toast.success(data.message);
+        await refreshUser();
+      }
+    } catch (err) {
+      toast.error("Failed to update shortlist.");
+    }
+  };
 
   return (
     <Link
@@ -52,15 +76,11 @@ export function PropertyCard({ p }) {
           )}
         </div>
         <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setSaved(!saved);
-          }}
+          onClick={handleSaveToggle}
           className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-background/90 backdrop-blur transition hover:scale-110"
           aria-label="Save"
         >
-          <Heart className={`h-3.5 w-3.5 ${saved ? "fill-destructive text-destructive" : "text-foreground"}`} />
+          <Heart className={`h-3.5 w-3.5 ${isSaved ? "fill-destructive text-destructive" : "text-foreground"}`} />
         </button>
       </div>
 
