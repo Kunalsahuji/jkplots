@@ -2,14 +2,16 @@ const express = require('express');
 const router = express.Router();
 const { getProperties, createProperty, getProperty, updateProperty, deleteProperty } = require('../controllers/propertyController');
 const { protect, authorize } = require('../middleware/auth');
+const { propertyValidation } = require('../middleware/propertyValidation');
+const validate = require('../utils/validate');
 
 router.route('/')
     .get(getProperties)
-    .post(protect, authorize('dealer', 'admin'), createProperty);
+    .post(protect, authorize('dealer', 'admin'), propertyValidation, validate, createProperty);
 
 router.route('/:id')
     .get(getProperty)
-    .put(protect, authorize('dealer', 'admin'), updateProperty)
+    .put(protect, authorize('dealer', 'admin'), propertyValidation, validate, updateProperty)
     .delete(protect, authorize('dealer', 'admin'), deleteProperty);
 
 module.exports = router;

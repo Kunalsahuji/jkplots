@@ -105,9 +105,13 @@ if (process.env.NODE_ENV === 'development') {
 // ─── Mount Routers ────────────────────────────────────────────────────────────
 const propertyRoutes = require('./routes/propertyRoutes');
 const userRoutes = require('./routes/userRoutes');
+const enquiryRoutes = require('./routes/enquiryRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 app.use('/api/properties', propertyRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/enquiries', enquiryRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

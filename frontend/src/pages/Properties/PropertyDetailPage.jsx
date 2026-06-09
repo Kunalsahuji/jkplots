@@ -17,6 +17,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import api from "@/utils/api";
+import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 const formatPrice = (val) => {
   if (!val) return "₹—";
@@ -52,12 +54,31 @@ function PropertyDetailSkeleton() {
 
 export default function PropertyDetailPage() {
   const { id } = useParams();
+  const { user, isAuthenticated } = useAuth();
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState(0);
   const [loanAmt, setLoanAmt] = useState(0);
   const [years, setYears] = useState(20);
   const [rate, setRate] = useState(8.5);
+
+  // Enquiry Form States
+  const [enquiryName, setEnquiryName] = useState("");
+  const [enquiryPhone, setEnquiryPhone] = useState("");
+  const [enquiryMsg, setEnquiryMsg] = useState("I'm interested in this property.");
+  const [submittingEnquiry, setSubmittingEnquiry] = useState(false);
+
+  // Auto-fill fields if user is authenticated
+  useEffect(() => {
+    if (user) {
+      setEnquiryName(user.name || "");
+      let cleanPhone = user.phone || "";
+      if (cleanPhone.startsWith("+91")) {
+        cleanPhone = cleanPhone.slice(3);
+      }
+      setEnquiryPhone(cleanPhone);
+    }
+  }, [user]);
 
   useEffect(() => {
     const mock = properties.find((x) => x.id === id);
@@ -111,7 +132,7 @@ export default function PropertyDetailPage() {
   const priceVal = p.price || 0;
   const priceLabel = formatPrice(p.price || p.priceLabel);
   const description = p.description || `Excellent ${type} located in premium locality of ${locality}, ${city}. Ideal investment opportunity with verified details.`;
-  const amenities = p.amenities || ["Water Supply", "Power Backup", "Security", "Parking Slot"];
+  const amenities = (p.amenities && p.amenities.length > 0) ? p.amenities : ["Water Supply", "Power Backup", "Security", "Parking Slot"];
 
   const dealerName = p.dealer?.name || "Verified Agent";
   const dealerPhone = p.contactNumber || p.dealerPhone || p.dealer?.phone || "9876543210";
@@ -126,6 +147,42 @@ export default function PropertyDetailPage() {
 
   const handleCall = () => {
     window.open(`tel:${dealerPhone}`, "_self");
+  };
+
+  const handleEnquirySubmit = async (e) => {
+    e.preventDefault();
+    if (!isAuthenticated) {
+      toast.error("Please login to request a callback.");
+      return;
+    }
+    if (!enquiryName.trim()) {
+      toast.error("Please enter your name.");
+      return;
+    }
+    const phoneDigits = enquiryPhone.replace(/\D/g, "");
+    if (phoneDigits.length !== 10) {
+      toast.error("Please enter a valid 10-digit mobile number.");
+      return;
+    }
+
+    setSubmittingEnquiry(true);
+    try {
+      const { data } = await api.post("/enquiries", {
+        propertyId: p._id || p.id,
+        name: enquiryName.trim(),
+        phone: phoneDigits,
+        message: enquiryMsg.trim(),
+      });
+      if (data.success) {
+        toast.success("Callback request sent successfully! The dealer will contact you soon.");
+        setEnquiryMsg("I'm interested in this property.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.error || "Failed to send enquiry. Please try again.");
+    } finally {
+      setSubmittingEnquiry(false);
+    }
   };
 
   const monthlyRate = rate / 12 / 100;
@@ -224,10 +281,69 @@ export default function PropertyDetailPage() {
             ))}
           </div>
 
+          {/* Property Specifications details */}
+          {(bedrooms > 0 || p.bathrooms > 0 || p.balconies > 0 || p.furnishing || p.parking || p.washrooms || p.contactNumber) && (
+            <Section title="Property Specifications">
+              <div className="grid grid-cols-2 gap-4 rounded-2xl border border-border bg-card p-5 sm:grid-cols-3">
+                {bedrooms > 0 && (
+                  <div>
+                    <span className="text-muted-foreground block text-xs uppercase tracking-wider font-semibold">Bedrooms</span>
+                    <span className="text-sm font-semibold text-foreground">{bedrooms}</span>
+                  </div>
+                )}
+                {p.bathrooms > 0 && (
+                  <div>
+                    <span className="text-muted-foreground block text-xs uppercase tracking-wider font-semibold">Bathrooms</span>
+                    <span className="text-sm font-semibold text-foreground">{p.bathrooms}</span>
+                  </div>
+                )}
+                {p.balconies > 0 && (
+                  <div>
+                    <span className="text-muted-foreground block text-xs uppercase tracking-wider font-semibold">Balconies</span>
+                    <span className="text-sm font-semibold text-foreground">{p.balconies}</span>
+                  </div>
+                )}
+                {p.furnishing && (
+                  <div>
+                    <span className="text-muted-foreground block text-xs uppercase tracking-wider font-semibold">Furnishing</span>
+                    <span className="text-sm font-semibold text-foreground">{p.furnishing}</span>
+                  </div>
+                )}
+                {p.parking && (
+                  <div>
+                    <span className="text-muted-foreground block text-xs uppercase tracking-wider font-semibold">Parking</span>
+                    <span className="text-sm font-semibold text-foreground">{p.parking}</span>
+                  </div>
+                )}
+                {p.washrooms && (
+                  <div>
+                    <span className="text-muted-foreground block text-xs uppercase tracking-wider font-semibold">Washrooms</span>
+                    <span className="text-sm font-semibold text-foreground">{p.washrooms}</span>
+                  </div>
+                )}
+                {p.contactNumber && (
+                  <div>
+                    <span className="text-muted-foreground block text-xs uppercase tracking-wider font-semibold">Contact Phone</span>
+                    <span className="text-sm font-semibold text-foreground">{p.contactNumber}</span>
+                  </div>
+                )}
+              </div>
+            </Section>
+          )}
+
           {/* Description */}
           <Section title="About this property">
             <p className="leading-relaxed text-muted-foreground">{description}</p>
           </Section>
+
+          {/* Video */}
+          {p.video && (
+            <Section title="Property Video Tour">
+              <div className="aspect-[16/9] overflow-hidden rounded-2xl border border-border bg-black">
+                <video src={resolveImage(p.video)} controls className="h-full w-full object-contain" />
+              </div>
+            </Section>
+          )}
 
           {/* Amenities */}
           <Section title="Amenities">
@@ -323,21 +439,32 @@ export default function PropertyDetailPage() {
                   <Phone className="h-4 w-4" /> {dealerPhone}
                 </Button>
               </div>
-              <form onSubmit={(e) => e.preventDefault()} className="mt-4 space-y-2 border-t border-border pt-4">
+              <form onSubmit={handleEnquirySubmit} className="mt-4 space-y-2 border-t border-border pt-4">
                 <input
+                  required
                   placeholder="Your name"
+                  value={enquiryName}
+                  onChange={(e) => setEnquiryName(e.target.value)}
                   className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
                 />
                 <input
+                  required
                   placeholder="Phone number"
+                  value={enquiryPhone}
+                  onChange={(e) => setEnquiryPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                   className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
                 />
                 <textarea
+                  required
                   placeholder="I'm interested in this property..."
                   rows={3}
+                  value={enquiryMsg}
+                  onChange={(e) => setEnquiryMsg(e.target.value)}
                   className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
                 />
-                <Button className="w-full rounded-xl bg-primary">Request a callback</Button>
+                <Button disabled={submittingEnquiry} type="submit" className="w-full rounded-xl bg-primary">
+                  {submittingEnquiry ? "Sending Request..." : "Request a callback"}
+                </Button>
               </form>
             </div>
           </div>

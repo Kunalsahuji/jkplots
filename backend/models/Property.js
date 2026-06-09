@@ -18,7 +18,20 @@ const PropertySchema = new mongoose.Schema({
     type: {
         type: String,
         required: [true, 'Please specify property type'],
-        enum: ['Apartment', 'Villa', 'Plot', 'Commercial']
+        enum: ['Flat/Apartment', 'Independent House / Villa', 'Independent / Builder Floor', 'Plot / Land', 'Office', 'Industry', 'Retail']
+    },
+    propertyType: {
+        type: String
+    },
+    state: {
+        type: String,
+        default: 'Jammu and Kashmir'
+    },
+    division: {
+        type: String
+    },
+    district: {
+        type: String
     },
     city: {
         type: String,
@@ -31,6 +44,27 @@ const PropertySchema = new mongoose.Schema({
     bedrooms: {
         type: Number,
         default: 0
+    },
+    bathrooms: {
+        type: Number,
+        default: 0
+    },
+    balconies: {
+        type: Number,
+        default: 0
+    },
+    furnishing: {
+        type: String
+    },
+    parking: {
+        type: String
+    },
+    washrooms: {
+        type: String
+    },
+    amenities: {
+        type: [String],
+        default: []
     },
     area: {
         type: Number,
@@ -47,6 +81,9 @@ const PropertySchema = new mongoose.Schema({
     photos: {
         type: [String],
         default: []
+    },
+    video: {
+        type: String
     },
     dealerPhone: {
         type: String

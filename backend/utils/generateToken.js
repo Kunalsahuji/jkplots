@@ -7,17 +7,17 @@ const jwt = require('jsonwebtoken');
  */
 const generateAccessToken = (userId) =>
     jwt.sign({ id: userId }, process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_ACCESS_EXPIRE || '15m',
+        expiresIn: '30d',
     });
 
 /**
- * Generates a long-lived JWT refresh token (7 days).
+ * Generates a long-lived JWT refresh token (30 days).
  * @param {string} userId - MongoDB user _id
  * @returns {string} Signed JWT
  */
 const generateRefreshToken = (userId) =>
     jwt.sign({ id: userId }, process.env.JWT_REFRESH_SECRET, {
-        expiresIn: process.env.JWT_REFRESH_EXPIRE || '7d',
+        expiresIn: '30d',
     });
 
 /**
@@ -34,20 +34,20 @@ const sendTokenCookies = (res, userId) => {
 
     const isProd = process.env.NODE_ENV === 'production';
 
-    // Access token cookie — 15 minutes
+    // Access token cookie — 30 days
     res.cookie('accessToken', accessToken, {
         httpOnly: true,
         secure: isProd,
         sameSite: isProd ? 'strict' : 'lax',
-        maxAge: 15 * 60 * 1000, // 15 min in ms
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in ms
     });
 
-    // Refresh token cookie — 7 days
+    // Refresh token cookie — 30 days
     res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         secure: isProd,
         sameSite: isProd ? 'strict' : 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in ms
     });
 
     return { accessToken, refreshToken };

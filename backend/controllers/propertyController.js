@@ -178,9 +178,31 @@ exports.createProperty = async (req, res, next) => {
         // Enforce the dealer phone from the authenticated user session
         req.body.dealerPhone = req.user.phone;
 
+        // Coerce numeric fields to positive absolute integers
+        if (req.body.price !== undefined) {
+            req.body.price = Math.abs(Math.round(Number(req.body.price) || 0));
+        }
+        if (req.body.area !== undefined) {
+            req.body.area = Math.abs(Math.round(Number(req.body.area) || 0));
+        }
+        if (req.body.bedrooms !== undefined) {
+            req.body.bedrooms = Math.abs(Math.round(Number(req.body.bedrooms) || 0));
+        }
+        if (req.body.bathrooms !== undefined) {
+            req.body.bathrooms = Math.abs(Math.round(Number(req.body.bathrooms) || 0));
+        }
+        if (req.body.balconies !== undefined) {
+            req.body.balconies = Math.abs(Math.round(Number(req.body.balconies) || 0));
+        }
+
         // Handle base64 photo uploads if present
         if (req.body.photos && Array.isArray(req.body.photos)) {
             req.body.photos = await Promise.all(req.body.photos.map(p => saveBase64File(p)));
+        }
+
+        // Handle base64 video upload if present
+        if (req.body.video) {
+            req.body.video = await saveBase64File(req.body.video);
         }
 
         const property = await Property.create(req.body);
@@ -210,9 +232,31 @@ exports.updateProperty = async (req, res, next) => {
             return next(new ErrorResponse(`User not authorized to update this property`, 401));
         }
 
+        // Coerce numeric fields to positive absolute integers
+        if (req.body.price !== undefined) {
+            req.body.price = Math.abs(Math.round(Number(req.body.price) || 0));
+        }
+        if (req.body.area !== undefined) {
+            req.body.area = Math.abs(Math.round(Number(req.body.area) || 0));
+        }
+        if (req.body.bedrooms !== undefined) {
+            req.body.bedrooms = Math.abs(Math.round(Number(req.body.bedrooms) || 0));
+        }
+        if (req.body.bathrooms !== undefined) {
+            req.body.bathrooms = Math.abs(Math.round(Number(req.body.bathrooms) || 0));
+        }
+        if (req.body.balconies !== undefined) {
+            req.body.balconies = Math.abs(Math.round(Number(req.body.balconies) || 0));
+        }
+
         // Handle base64 photos if they are updated
         if (req.body.photos && Array.isArray(req.body.photos)) {
             req.body.photos = await Promise.all(req.body.photos.map(p => saveBase64File(p)));
+        }
+
+        // Handle base64 video upload if present
+        if (req.body.video) {
+            req.body.video = await saveBase64File(req.body.video);
         }
 
         property = await Property.findByIdAndUpdate(req.params.id, req.body, {
