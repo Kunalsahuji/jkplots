@@ -16,6 +16,10 @@ import SavedPage from '@/pages/Saved/SavedPage';
 import AdminLoginPage from '@/pages/Admin/AdminLoginPage';
 import AdminDashboardPage from '@/pages/Admin/AdminDashboardPage';
 import EditPropertyPage from '@/pages/Properties/EditPropertyPage';
+import AboutPage from '@/pages/Static/AboutPage';
+import ContactPage from '@/pages/Static/ContactPage';
+import PrivacyPage from '@/pages/Static/PrivacyPage';
+import TermsPage from '@/pages/Static/TermsPage';
 
 // ─── Skeleton loader shown while session check is in-flight ───────────────────
 function PageSkeleton() {
@@ -112,6 +116,10 @@ export default function AppRoutes() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/properties" element={<PropertyListPage />} />
                 <Route path="/properties/:id" element={<PropertyDetailPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/contact" element={<ContactPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/terms" element={<TermsPage />} />
 
                 {/* Protected — require login */}
                 <Route path="/explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />

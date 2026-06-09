@@ -327,7 +327,6 @@ export default function PropertyDetailPage() {
 
   const handleReviewDelete = async (reviewId) => {
     if (!requireAuth("delete reviews")) return;
-    if (!window.confirm("Are you sure you want to delete this review?")) return;
 
     try {
       const propId = property?._id || property?.id;
