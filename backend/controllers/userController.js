@@ -150,15 +150,18 @@ exports.getUsers = asyncHandler(async (req, res, next) => {
 exports.toggleSaveProperty = asyncHandler(async (req, res, next) => {
     const { propertyId } = req.params;
     const user = await User.findById(req.user.id);
+    const Property = require('../models/Property');
 
     const idx = user.savedProperties.findIndex(id => id.toString() === propertyId);
     let saved;
     if (idx === -1) {
         user.savedProperties.push(propertyId);
         saved = true;
+        await Property.findByIdAndUpdate(propertyId, { $inc: { likes: 1 } });
     } else {
         user.savedProperties.splice(idx, 1);
         saved = false;
+        await Property.findByIdAndUpdate(propertyId, { $inc: { likes: -1 } });
     }
     await user.save({ validateModifiedOnly: true });
 

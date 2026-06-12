@@ -552,13 +552,13 @@ export default function ExplorePage() {
                   <div className="font-display text-lg font-bold text-primary">{p.priceLabel || formatINR(p.price)}</div>
                   <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                     <span className="inline-flex items-center gap-0.5">
-                      <Eye className="h-3 w-3" /> {((p.price / 10000) | 0)}
+                      <Eye className="h-3 w-3" /> {p.views || 0}
                     </span>
                     <span className="inline-flex items-center gap-0.5">
-                      <Heart className="h-3 w-3" /> {((p.price / 100000) | 0)}
+                      <Heart className="h-3 w-3" /> {p.likes || 0}
                     </span>
                     <span className="inline-flex items-center gap-0.5">
-                      <MessageSquare className="h-3 w-3" /> {((p.price / 500000) | 0)}
+                      <MessageSquare className="h-3 w-3" /> {p.reviews?.length || p.enquiriesCount || 0}
                     </span>
                   </div>
                 </div>

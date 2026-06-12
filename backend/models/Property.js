@@ -59,6 +59,10 @@ const PropertySchema = new mongoose.Schema({
     parking: {
         type: String
     },
+    verified: {
+        type: Boolean,
+        default: false
+    },
     washrooms: {
         type: String
     },
@@ -99,7 +103,22 @@ const PropertySchema = new mongoose.Schema({
             comment: { type: String, default: "" },
             createdAt: { type: Date, default: Date.now }
         }
-    ]
+    ],
+    views: {
+        type: Number,
+        default: 0
+    },
+    viewedBy: [
+        { type: String }
+    ],
+    likes: {
+        type: Number,
+        default: 0
+    },
+    enquiriesCount: {
+        type: Number,
+        default: 0
+    }
 }, {
     timestamps: true
 });

@@ -38,6 +38,9 @@ exports.createEnquiry = async (req, res, next) => {
             $push: { myEnquiries: enquiry._id }
         });
 
+        // Increment property enquiries count
+        await Property.findByIdAndUpdate(propertyId, { $inc: { enquiriesCount: 1 } });
+
         // Notify the dealer
         const dealer = await User.findOne({ phone: property.dealerPhone });
         if (dealer) {

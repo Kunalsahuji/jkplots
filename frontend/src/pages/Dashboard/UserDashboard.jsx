@@ -178,10 +178,10 @@ export default function UserDashboard() {
   const sentEnquiries = enquiries.filter(e => e.buyerPhone === user?.phone);
 
   const stats = [
-    { label: isAdmin ? "System Listings" : "Active listings", value: (isDealer || isAdmin) ? dbProperties.length : "0", icon: Home, trend: "Live status" },
-    { label: "Received Enquiries", value: isDealer ? receivedEnquiries.length : "0", icon: MessageSquare, trend: "Prospects" },
-    { label: "Sent Enquiries", value: sentEnquiries.length, icon: FileText, trend: "My requests" },
-    { label: "Saved Listings", value: savedProperties.length, icon: Heart, trend: "Shortlist" },
+    { label: isAdmin ? "System Listings" : "Active listings", value: (isDealer || isAdmin) ? dbProperties.length : "0", icon: Home, trend: "Live status", tab: isAdmin ? "All Listings" : "My Listings" },
+    { label: "Received Enquiries", value: isDealer ? receivedEnquiries.length : "0", icon: MessageSquare, trend: "Prospects", tab: "Enquiries" },
+    { label: "Sent Enquiries", value: sentEnquiries.length, icon: FileText, trend: "My requests", tab: "Enquiries" },
+    { label: "Saved Listings", value: savedProperties.length, icon: Heart, trend: "Shortlist", tab: "Saved" },
   ];
 
   const tabs = [
@@ -257,7 +257,11 @@ export default function UserDashboard() {
               {/* Stats Grid */}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {stats.map((s) => (
-                  <div key={s.label} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                  <button
+                    key={s.label}
+                    onClick={() => setActiveTab(s.tab)}
+                    className="rounded-2xl border border-border bg-card p-5 shadow-sm text-left transition hover:border-primary hover:shadow-md active:scale-95"
+                  >
                     <div className="flex items-center justify-between">
                       <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary-soft text-primary">
                         <s.icon className="h-5 w-5" />
@@ -268,7 +272,7 @@ export default function UserDashboard() {
                     </div>
                     <div className="mt-4 font-display text-3xl font-bold">{s.value}</div>
                     <div className="text-sm text-muted-foreground mt-0.5">{s.label}</div>
-                  </div>
+                  </button>
                 ))}
               </div>
 

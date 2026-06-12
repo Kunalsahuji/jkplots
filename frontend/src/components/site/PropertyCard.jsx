@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { MapPin, BadgeCheck, Heart } from "lucide-react";
+import { MapPin, BadgeCheck, Heart, Eye } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
@@ -91,9 +91,16 @@ export function PropertyCard({ p }) {
         </p>
         <div className="flex items-end justify-between pt-1">
           <div className="font-display text-base font-bold text-primary">{priceLabel}</div>
-          <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-medium text-primary">
-            {type}
-          </span>
+          <div className="flex items-center gap-1.5">
+            {p.views !== undefined && (
+               <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium bg-secondary/80 px-1.5 py-0.5 rounded" title={`${p.views} Views`}>
+                 <Eye className="h-3 w-3" /> {p.views}
+               </span>
+            )}
+            <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-medium text-primary">
+              {type}
+            </span>
+          </div>
         </div>
       </div>
     </Link>

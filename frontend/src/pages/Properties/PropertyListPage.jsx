@@ -62,6 +62,9 @@ export default function PropertyListPage() {
       setLoading(true);
       try {
         const params = {};
+        const searchParam = searchParams.get("search");
+        if (searchParam) params.search = searchParam;
+        
         if (city !== "All") params.city = city;
         if (type !== "All") params.type = type;
         if (purpose !== "All") params.purpose = purpose;
@@ -84,12 +87,12 @@ export default function PropertyListPage() {
       }
     };
     fetchListings();
-  }, [city, type, purpose, beds, budget, sort]);
+  }, [city, type, purpose, beds, budget, sort, searchParams]);
 
   const filtered = useMemo(() => {
     let list = dbProperties;
     if (verifiedOnly) list = list.filter((p) => p.verified);
-    if (furnished) list = list.filter((p) => p.furnished);
+    if (furnished) list = list.filter((p) => p.furnishing === "Furnished");
     return list;
   }, [dbProperties, verifiedOnly, furnished]);
 

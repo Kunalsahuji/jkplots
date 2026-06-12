@@ -41,7 +41,11 @@ const generateProperties = (dealerId, dealerPhone) => {
             contactNumber: dealerPhone,
             dealerPhone: dealerPhone,
             dealer: dealerId,
-            photos: [getRand(images), getRand(images)]
+            photos: [getRand(images), getRand(images)],
+            views: 0,
+            viewedBy: [],
+            likes: 0,
+            enquiriesCount: 0
         });
     };
 
@@ -67,6 +71,44 @@ const generateProperties = (dealerId, dealerPhone) => {
         addProp('Commercial', type, `Large ${type} Investment`, 0, 2, 5000, 25000000);
     });
 
+    // 4. RICH PROPERTIES (Verified, Furnished, 5 Images, 1 Video)
+    const richImages = [
+        "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80"
+    ];
+    const sampleVideo = "https://www.w3schools.com/html/mov_bbb.mp4"; // Reliable sample video
+
+    for(let i=1; i<=5; i++) {
+        properties.push({
+            title: `Fully Verified Premium Villa ${i}`,
+            description: `An extremely premium and fully verified villa with a cinematic video tour. Completely furnished with state of the art amenities.`,
+            purpose: 'Buy',
+            type: 'Independent House / Villa',
+            city: getRand(cities),
+            locality: getRand(localities),
+            bedrooms: 4,
+            bathrooms: 4,
+            balconies: 2,
+            furnishing: "Furnished",
+            parking: "Covered",
+            area: 3500,
+            price: 25000000 + (i * 1000000),
+            contactNumber: dealerPhone,
+            dealerPhone: dealerPhone,
+            dealer: dealerId,
+            photos: richImages, // 5 images
+            video: sampleVideo, // 1 video
+            verified: true, // Verification filter active
+            views: 0,
+            viewedBy: [],
+            likes: 0,
+            enquiriesCount: 0
+        });
+    }
+
     return properties;
 };
 
@@ -85,6 +127,11 @@ const seedDatabase = async () => {
         }
 
         console.log(`Found dealer: ${user.name}. Starting seed process...`);
+
+        // Clean up old properties to prevent duplicates and legacy errors
+        await Property.deleteMany({});
+        await User.updateMany({}, { $set: { myProperties: [] } });
+        console.log('Cleared legacy properties from database.');
 
         const propertiesToSeed = generateProperties(user._id, user.phone);
 

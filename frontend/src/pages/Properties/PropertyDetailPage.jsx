@@ -1,5 +1,4 @@
 import { useParams, Link, Navigate } from "react-router-dom";
-import { properties } from "@/utils/properties";
 import { PropertyCard } from "@/components/site/PropertyCard";
 import {
   Bed,
@@ -27,6 +26,7 @@ import {
   Star,
   User,
   Shield,
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -152,13 +152,6 @@ export default function PropertyDetailPage() {
   }, [user]);
 
   useEffect(() => {
-    const mock = properties.find((x) => x.id === id);
-    if (mock) {
-      setProperty(mock);
-      setLoading(false);
-      return;
-    }
-
     const fetchDetail = async () => {
       setLoading(true);
       try {
@@ -166,6 +159,9 @@ export default function PropertyDetailPage() {
         if (data.success) {
           setProperty(data.data);
           setReviewsList(data.data.reviews || []);
+
+          // Silently increment views without blocking
+          api.put(`/properties/${id}/view`).catch(console.error);
         }
       } catch (err) {
         console.error("Failed to load property details:", err);
@@ -369,7 +365,7 @@ export default function PropertyDetailPage() {
         (Math.pow(1 + monthlyRate, months) - 1)
       : 0;
 
-  const similar = properties.filter((x) => x.id !== p.id && x.city === p.city).slice(0, 3);
+  const similar = [];
 
   return (
     <motion.div
@@ -476,8 +472,14 @@ export default function PropertyDetailPage() {
                   </span>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button
+              <div className="flex items-center gap-4">
+                <div className="flex flex-col items-center">
+                  <span className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-sm font-semibold text-muted-foreground shadow-sm border border-border/50">
+                    <Eye className="h-4 w-4" /> {p.views || 0} views
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <button
                   onClick={handleSaveToggle}
                   className="grid h-10 w-10 place-items-center rounded-full border border-border hover:bg-secondary transition-transform hover:scale-105 active:scale-95"
                   title={isSaved ? "Saved" : "Save Property"}
@@ -493,8 +495,9 @@ export default function PropertyDetailPage() {
                 </button>
               </div>
             </div>
+          </div>
 
-            <div className="mt-4 flex items-baseline gap-3">
+          <div className="mt-4 flex items-baseline gap-3">
               <div className="font-display text-4xl font-bold text-primary">{priceLabel}</div>
               {areaSqft > 0 && priceVal > 0 && (
                 <div className="text-sm text-muted-foreground">· {Math.round(priceVal / areaSqft).toLocaleString()}/sqft</div>

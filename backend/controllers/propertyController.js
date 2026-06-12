@@ -107,6 +107,27 @@ exports.getProperties = async (req, res, next) => {
             }
         }
 
+        // Global search (title, description, city, locality, type, furnishing)
+        if (reqQuery.search) {
+            const searchRegex = { $regex: reqQuery.search, $options: 'i' };
+            const searchOr = [
+                { title: searchRegex },
+                { description: searchRegex },
+                { city: searchRegex },
+                { locality: searchRegex },
+                { type: searchRegex },
+                { furnishing: searchRegex }
+            ];
+            
+            // If we already have an $or from Commercial, we must use $and to combine them
+            if (filterObj.$or) {
+                filterObj.$and = [ { $or: filterObj.$or }, { $or: searchOr } ];
+                delete filterObj.$or;
+            } else {
+                filterObj.$or = searchOr;
+            }
+        }
+
         // Locality (partial regex match)
         if (reqQuery.locality) {
             filterObj.locality = { $regex: reqQuery.locality, $options: 'i' };
@@ -414,5 +435,35 @@ exports.deletePropertyReview = async (req, res, next) => {
         });
     } catch (err) {
         next(err);
+    }
+};
+
+// @desc    Increment property view count
+// @route   PUT /api/properties/:id/view
+// @access  Public
+exports.incrementView = async (req, res, next) => {
+    try {
+        const propertyId = req.params.id;
+        const viewerId = req.body?.viewerId || req.ip || 'anonymous';
+
+        // Using findByIdAndUpdate directly avoids triggering Mongoose document validation
+        // which might fail on older/seeded data missing required fields.
+        const property = await Property.findByIdAndUpdate(
+            propertyId,
+            {
+                $inc: { views: 1 },
+                $addToSet: { viewedBy: viewerId } // $addToSet only pushes if it doesn't exist
+            },
+            { new: true }
+        );
+        
+        if (!property) {
+            return res.status(404).json({ success: false, message: 'Property not found' });
+        }
+
+        res.status(200).json({ success: true, views: property.views });
+    } catch (err) {
+        console.error('View increment error:', err);
+        res.status(500).json({ success: false, error: err.message });
     }
 };
