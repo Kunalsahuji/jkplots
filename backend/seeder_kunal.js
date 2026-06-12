@@ -1,7 +1,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 const User = require('./models/User');
+const Admin = require('./models/Admin');
 const Property = require('./models/Property');
+const bcrypt = require('bcryptjs');
 
 // Sample real estate images
 const images = [
@@ -144,6 +146,18 @@ const seedDatabase = async () => {
             $push: { myProperties: { $each: propertyIds } }
         });
         console.log('User myProperties array updated successfully!');
+
+        // Seed Admin User
+        await Admin.deleteMany({});
+        const adminPasswordHash = await bcrypt.hash('Admin@123', 10);
+        await Admin.create({
+            name: 'JKPlot Admin',
+            email: 'admin@jkplot.com',
+            phone: '9999999999',
+            password: adminPasswordHash,
+            role: 'superadmin'
+        });
+        console.log('Default Admin created: admin@jkplot.com / Admin@123');
 
         process.exit();
     } catch (error) {

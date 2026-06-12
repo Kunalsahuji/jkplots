@@ -33,6 +33,12 @@ exports.protect = asyncHandler(async (req, res, next) => {
         // Attach minimal user info to request (no password, no tokens)
         req.user = await User.findById(decoded.id).select('-__v');
 
+        // Check if admin
+        if (!req.user) {
+            const Admin = require('../models/Admin');
+            req.user = await Admin.findById(decoded.id).select('-__v -password');
+        }
+
         if (!req.user) {
             return next(new ErrorResponse('User no longer exists.', 401));
         }

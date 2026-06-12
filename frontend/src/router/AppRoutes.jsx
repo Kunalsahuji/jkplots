@@ -13,8 +13,9 @@ import PostPropertyPage from '@/pages/Properties/PostPropertyPage';
 import UserDashboard from '@/pages/Dashboard/UserDashboard';
 import AuthPage from '@/pages/Auth/AuthPage';
 import SavedPage from '@/pages/Saved/SavedPage';
-import AdminLoginPage from '@/pages/Admin/AdminLoginPage';
-import AdminDashboardPage from '@/pages/Admin/AdminDashboardPage';
+import AdminLogin from '@/pages/Admin/AdminLogin';
+import AdminLayout from '@/pages/Admin/AdminLayout';
+import AdminDashboard from '@/pages/Admin/AdminDashboard';
 import EditPropertyPage from '@/pages/Properties/EditPropertyPage';
 import AboutPage from '@/pages/Static/AboutPage';
 import ContactPage from '@/pages/Static/ContactPage';
@@ -66,7 +67,7 @@ function AdminProtectedRoute({ children }) {
 
     if (isLoading) return <PageSkeleton />;
 
-    if (!isAuthenticated || user?.role !== 'admin') {
+    if (!isAuthenticated || (user?.role !== 'admin' && user?.role !== 'superadmin')) {
         navigate('/admin/login', { replace: true });
         return null;
     }
@@ -141,16 +142,25 @@ export default function AppRoutes() {
             />
 
             {/* Admin Portal — outside layout (full screen dark admin design) */}
-            <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route path="/admin/login" element={
+                <>
+                    <AdminLogin />
+                    <Toaster />
+                </>
+            } />
+            
             <Route
-                path="/admin/dashboard"
+                path="/admin"
                 element={
                     <AdminProtectedRoute>
-                        <AdminDashboardPage />
+                        <AdminLayout />
                         <Toaster />
                     </AdminProtectedRoute>
                 }
-            />
+            >
+                <Route index element={<AdminDashboard />} />
+                <Route path="dashboard" element={<AdminDashboard />} />
+            </Route>
 
             <Route path="*" element={<NotFound />} />
         </Routes>

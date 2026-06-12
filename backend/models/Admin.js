@@ -1,0 +1,49 @@
+const mongoose = require('mongoose');
+
+const AdminSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true
+  },
+  phone: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true
+  },
+  password: {
+    type: String,
+    required: true,
+    select: false // Don't return password in queries by default
+  },
+  role: {
+    type: String,
+    enum: ['admin', 'superadmin'],
+    default: 'admin'
+  },
+  permissions: {
+    type: [String],
+    default: ['read', 'write', 'update', 'delete']
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  lastLogin: {
+    type: Date
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+}, { timestamps: true });
+
+module.exports = mongoose.model('Admin', AdminSchema);
