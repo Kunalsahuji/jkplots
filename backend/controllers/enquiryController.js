@@ -25,10 +25,17 @@ exports.createEnquiry = async (req, res, next) => {
 
         const enquiry = await Enquiry.create({
             property: propertyId,
+            dealer: property.dealer,
             dealerPhone: property.dealerPhone,
+            buyer: req.user._id,
             buyerPhone,
             buyerName,
             message: message || "I'm interested in this property."
+        });
+
+        // Update the buyer's myEnquiries array
+        await User.findByIdAndUpdate(req.user._id, {
+            $push: { myEnquiries: enquiry._id }
         });
 
         // Notify the dealer

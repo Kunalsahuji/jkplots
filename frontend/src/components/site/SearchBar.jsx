@@ -1,26 +1,43 @@
 import { useNavigate } from "react-router-dom";
 import { Search, MapPin, Building2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
-const cities = ["Srinagar", "Jammu", "Gulmarg", "Pahalgam", "Anantnag", "Baramulla", "Udhampur"];
-const types = ["Any", "Villa", "Apartment", "Plot", "Commercial"];
+const cities = ["All", "Srinagar", "Jammu", "Gulmarg", "Pahalgam", "Anantnag", "Baramulla", "Udhampur"];
 
 export function SearchBar({ compact = false }) {
   const navigate = useNavigate();
   const [purpose, setPurpose] = useState("Buy");
-  const [city, setCity] = useState("Srinagar");
-  const [type, setType] = useState("Any");
+  const [city, setCity] = useState("All");
+  const [type, setType] = useState("All");
 
   const purposes = ["Buy", "Rent", "Commercial"];
 
+  // Dynamic types based on purpose
+  const getTypes = (currentPurpose) => {
+    if (currentPurpose === "Commercial") {
+      return ["All", "Office", "Industry", "Retail", "Plot / Land"];
+    }
+    if (currentPurpose === "Buy" || currentPurpose === "Rent") {
+      return ["All", "Flat/Apartment", "Independent House / Villa", "Independent / Builder Floor", "Plot / Land"];
+    }
+    return ["All", "Flat/Apartment", "Independent House / Villa", "Independent / Builder Floor", "Office", "Industry", "Retail", "Plot / Land"];
+  };
+
+  const [types, setTypes] = useState(getTypes(purpose));
+
+  // Reset type when purpose changes
+  useEffect(() => {
+    setTypes(getTypes(purpose));
+    setType("All");
+  }, [purpose]);
+
   const handleSearch = () => {
     const params = new URLSearchParams();
-    params.append("purpose", purpose);
-    params.append("city", city);
-    if (type !== "Any") {
-      params.append("type", type);
-    }
+    if (purpose !== "All") params.append("purpose", purpose);
+    if (city !== "All") params.append("city", city);
+    if (type !== "All") params.append("type", type);
+    
     navigate(`/properties?${params.toString()}`);
   };
 

@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const Property = require('../models/Property');
+const User = require('../models/User');
 const ErrorResponse = require('../utils/errorResponse');
 
 // Helper to save base64 to Cloudinary with local-disk fallback
@@ -175,8 +176,9 @@ exports.getProperty = async (req, res, next) => {
 // @access  Private (Dealer/Admin)
 exports.createProperty = async (req, res, next) => {
     try {
-        // Enforce the dealer phone from the authenticated user session
+        // Enforce the dealer phone and ID from the authenticated user session
         req.body.dealerPhone = req.user.phone;
+        req.body.dealer = req.user._id;
 
         // Coerce numeric fields to positive absolute integers
         if (req.body.price !== undefined) {
@@ -206,6 +208,11 @@ exports.createProperty = async (req, res, next) => {
         }
 
         const property = await Property.create(req.body);
+
+        // Update the user's myProperties array
+        await User.findByIdAndUpdate(req.user._id, {
+            $push: { myProperties: property._id }
+        });
 
         res.status(201).json({
             success: true,

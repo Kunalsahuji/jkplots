@@ -85,6 +85,10 @@ const PropertySchema = new mongoose.Schema({
     video: {
         type: String
     },
+    dealer: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
     dealerPhone: {
         type: String
     },

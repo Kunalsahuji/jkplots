@@ -6,6 +6,14 @@ const EnquirySchema = new mongoose.Schema({
         ref: 'Property',
         required: [true, 'Property reference is required']
     },
+    buyer: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    dealer: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
     dealerPhone: {
         type: String,
         required: [true, 'Dealer phone number is required']

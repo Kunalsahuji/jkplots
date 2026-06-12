@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import api from "@/utils/api";
 import { motion } from "framer-motion";
 
-const cityOpts = ["All", "Srinagar", "Jammu", "Gulmarg", "Pahalgam"];
-const typeOpts = ["All", "Villa", "Apartment", "Plot", "Commercial"];
+const cityOpts = ["All", "Srinagar", "Jammu", "Gulmarg", "Pahalgam", "Anantnag", "Baramulla", "Udhampur"];
 const bedroomOpts = ["Any", "1+", "2+", "3+", "4+"];
 
 export default function PropertyListPage() {
@@ -28,6 +27,24 @@ export default function PropertyListPage() {
 
   const [dbProperties, setDbProperties] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Dynamic types based on purpose
+  const typeOpts = useMemo(() => {
+    if (purpose === "Commercial") {
+      return ["All", "Office", "Industry", "Retail", "Plot / Land"];
+    }
+    if (purpose === "Buy" || purpose === "Rent") {
+      return ["All", "Flat/Apartment", "Independent House / Villa", "Independent / Builder Floor", "Plot / Land"];
+    }
+    return ["All", "Flat/Apartment", "Independent House / Villa", "Independent / Builder Floor", "Office", "Industry", "Retail", "Plot / Land"];
+  }, [purpose]);
+
+  // Reset type if current type is not valid for the new purpose
+  useEffect(() => {
+    if (type !== "All" && !typeOpts.includes(type)) {
+      setType("All");
+    }
+  }, [purpose, type, typeOpts]);
 
   useEffect(() => {
     const fetchParams = {};

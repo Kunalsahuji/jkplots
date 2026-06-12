@@ -234,7 +234,7 @@ export default function HomePage() {
       </section>
 
       {/* WHY US */}
-      <section className="bg-primary-soft/50 py-20">
+      {/* <section className="bg-primary-soft/50 py-20">
         <div className="container-px mx-auto max-w-7xl">
           <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
             <div>
@@ -264,7 +264,7 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* LATEST */}
       <section className="container-px mx-auto max-w-7xl py-16">

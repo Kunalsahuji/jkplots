@@ -32,6 +32,20 @@ const UserSchema = new mongoose.Schema(
                 ref: 'Property',
             },
         ],
+        // Properties created by this user (dealer)
+        myProperties: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Property',
+            },
+        ],
+        // Enquiries made by this user
+        myEnquiries: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Enquiry',
+            },
+        ],
         // Temporary OTP storage (will be replaced by SMS provider later)
         // In production: store hashed OTP with expiry
         otp: {

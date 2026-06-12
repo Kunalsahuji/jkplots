@@ -74,7 +74,7 @@ export function Footer() {
             </span>
             <span className="flex items-center gap-1.5">
               <Mail className="h-3.5 w-3.5" />
-              <span>hello@jkplot.in</span>
+              <span>Jkplot878@gmail.com</span>
             </span>
           </div>
         </div>
