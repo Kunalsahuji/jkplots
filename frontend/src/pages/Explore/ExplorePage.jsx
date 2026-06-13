@@ -180,8 +180,8 @@ export default function ExplorePage() {
     if (dbProperties.length === 0) return { total: 0, avg: 0, verified: 0, featured: 0 };
     const total = dbProperties.length;
     const avg = Math.round(dbProperties.reduce((a, b) => a + (b.price || 0), 0) / total);
-    const verified = dbProperties.filter((p) => p.dealer).length; // using dealer presence as mock verified
-    const featured = dbProperties.length > 5 ? 5 : dbProperties.length;
+    const verified = dbProperties.filter((p) => p.verified).length;
+    const featured = dbProperties.filter((p) => p.isFeatured && new Date(p.featuredUntil) > new Date()).length;
     return { total, avg, verified, featured };
   }, [dbProperties]);
 

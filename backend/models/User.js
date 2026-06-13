@@ -80,7 +80,4 @@ const UserSchema = new mongoose.Schema(
     }
 );
 
-// Index for faster phone lookups on login
-UserSchema.index({ phone: 1 });
-
 module.exports = mongoose.model('User', UserSchema);
