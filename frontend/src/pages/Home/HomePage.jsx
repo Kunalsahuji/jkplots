@@ -198,14 +198,16 @@ export default function HomePage() {
       </section>
 
       {/* FEATURED */}
-      <section className="container-px mx-auto max-w-7xl py-12">
-        <SectionHeader title="Featured properties" sub="Hand-curated, verified, ready to visit" link="/properties" />
-        <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {featured.map((p) => (
-            <PropertyCard key={p._id || p.id} p={p} />
-          ))}
-        </div>
-      </section>
+      {featured && featured.length > 0 && (
+        <section className="container-px mx-auto max-w-7xl py-12">
+          <SectionHeader title="Featured properties" sub="Hand-curated, verified, ready to visit" link="/properties" />
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {featured.map((p) => (
+              <PropertyCard key={p._id || p.id} p={p} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* CITIES */}
       <section className="container-px mx-auto max-w-7xl py-16">

@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
-require('dotenv').config();
-const User = require('./models/User');
-const Admin = require('./models/Admin');
-const Property = require('./models/Property');
+require('dotenv').config({ path: __dirname + '/../.env' });
+const User = require('../models/User');
+const Admin = require('../models/Admin');
+const Property = require('../models/Property');
 const bcrypt = require('bcryptjs');
 
 // Sample real estate images
@@ -160,7 +160,7 @@ const seedDatabase = async () => {
         console.log('Default Admin created: admin@jkplot.com / Admin@123');
 
         // Seed Promotion Plans
-        const PromotionPlan = require('./models/PromotionPlan');
+        const PromotionPlan = require('../models/PromotionPlan');
         await PromotionPlan.deleteMany({});
         await PromotionPlan.insertMany([
             {
