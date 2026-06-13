@@ -16,6 +16,9 @@ const sanitizeUser = (user) => ({
     phone: user.phone,
     role: user.role,
     savedProperties: user.savedProperties,
+    panNumber: user.panNumber,
+    panName: user.panName,
+    kycStatus: user.kycStatus,
     createdAt: user.createdAt,
 });
 
@@ -189,5 +192,77 @@ exports.updateProfile = asyncHandler(async (req, res, next) => {
         success: true,
         data: sanitizeUser(user),
         message: 'Profile updated successfully',
+    });
+});
+// ─── @desc    Initiate KYC (Send OTP) ────────────────────────────────────────
+// ─── @route   POST /api/users/kyc/initiate
+// ─── @access  Private (Dealer)
+exports.initiateKYC = asyncHandler(async (req, res, next) => {
+    const { panNumber, panName } = req.body;
+    
+    if (!panNumber || !panName) {
+        return next(new ErrorResponse('Please provide PAN Number and Name on PAN', 400));
+    }
+
+    const user = await User.findById(req.user.id);
+    
+    // Save details in pending state
+    user.panNumber = panNumber.toUpperCase();
+    user.panName = panName;
+    user.kycStatus = 'pending';
+    
+    // Set OTP
+    user.otp = { code: HARDCODED_OTP, expiresAt: new Date(Date.now() + 10 * 60 * 1000) };
+    await user.save({ validateModifiedOnly: true });
+
+    res.status(200).json({
+        success: true,
+        message: 'KYC Details saved. OTP sent to registered mobile number for verification.',
+        data: sanitizeUser(user)
+    });
+});
+
+// ─── @desc    Verify KYC OTP and Approve ─────────────────────────────────────
+// ─── @route   POST /api/users/kyc/verify
+// ─── @access  Private (Dealer)
+exports.verifyKYCOTP = asyncHandler(async (req, res, next) => {
+    const { otp } = req.body;
+
+    const user = await User.findById(req.user.id).select('+otp.code +otp.expiresAt');
+
+    if (!user.otp || !user.otp.code) {
+        return next(new ErrorResponse('No OTP request found. Please initiate KYC again.', 400));
+    }
+
+    if (user.otp.expiresAt < Date.now()) {
+        user.otp = undefined;
+        await user.save({ validateModifiedOnly: true });
+        return next(new ErrorResponse('OTP expired. Please request a new one.', 400));
+    }
+
+    if (user.otp.code !== otp) {
+        return next(new ErrorResponse('Invalid OTP', 400));
+    }
+
+    // OTP Verified! Simulate automated verification
+    // (If the PAN was "FAILX1234X", we reject it for testing)
+    if (user.panNumber === 'FAILX1234X') {
+        user.kycStatus = 'rejected';
+    } else {
+        user.kycStatus = 'approved';
+        
+        // Find all properties of this dealer and mark them verified
+        const Property = require('../models/Property');
+        await Property.updateMany({ dealer: user._id }, { $set: { verified: true } });
+    }
+
+    // Clear OTP
+    user.otp = undefined;
+    await user.save({ validateModifiedOnly: true });
+
+    res.status(200).json({
+        success: true,
+        message: user.kycStatus === 'approved' ? 'KYC Verified successfully!' : 'KYC Rejected. Invalid details.',
+        data: sanitizeUser(user)
     });
 });

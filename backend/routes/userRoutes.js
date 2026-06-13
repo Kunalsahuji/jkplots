@@ -9,6 +9,8 @@ const {
     getUsers,
     toggleSaveProperty,
     updateProfile,
+    initiateKYC,
+    verifyKYCOTP
 } = require('../controllers/userController');
 
 const { protect, authorize } = require('../middleware/auth');
@@ -25,5 +27,8 @@ router.put('/me', protect, updateProfile);
 router.post('/logout', protect, logout);
 router.get('/', protect, authorize('admin'), getUsers);
 router.post('/save-property/:propertyId', protect, toggleSaveProperty);
+
+router.post('/kyc/initiate', protect, initiateKYC);
+router.post('/kyc/verify', protect, verifyKYCOTP);
 
 module.exports = router;

@@ -56,6 +56,21 @@ const UserSchema = new mongoose.Schema(
             type: Boolean,
             default: true,
         },
+        panNumber: {
+            type: String,
+            trim: true,
+            uppercase: true,
+            match: [/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'Invalid PAN Card Number'],
+        },
+        panName: {
+            type: String,
+            trim: true,
+        },
+        kycStatus: {
+            type: String,
+            enum: ['unverified', 'pending', 'approved', 'rejected'],
+            default: 'unverified',
+        },
     },
     {
         timestamps: true,

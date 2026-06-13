@@ -27,6 +27,7 @@ import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 import { toast } from "sonner";
 import PromotePropertyTab from "./PromotePropertyTab";
+import KycSection from "./KycSection";
 
 export default function UserDashboard() {
   const { user, refreshUser } = useAuth();
@@ -744,6 +745,8 @@ export default function UserDashboard() {
                   {updatingProfile ? "Saving..." : "Save Settings"}
                 </button>
               </form>
+
+              {isDealer && <KycSection />}
             </div>
           )}
         </div>
