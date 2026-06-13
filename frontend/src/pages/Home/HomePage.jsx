@@ -54,8 +54,8 @@ export default function HomePage() {
   }, []);
 
   const activeProperties = propertyList.length > 0 ? propertyList : properties;
-  const featured = activeProperties.filter((p) => p.featured || !p.id).slice(0, 8);
-  const all = activeProperties.slice(0, 8);
+  const featured = activeProperties.filter((p) => p.isFeatured && new Date(p.featuredUntil) > new Date()).slice(0, 8);
+  const all = activeProperties.filter((p) => !p.isFeatured || new Date(p.featuredUntil) <= new Date()).slice(0, 8);
 
   useEffect(() => {
     const timer = setInterval(() => {

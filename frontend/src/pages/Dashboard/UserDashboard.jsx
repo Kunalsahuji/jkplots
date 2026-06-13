@@ -21,21 +21,53 @@ import {
   X,
   FileText
 } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
 import { PropertyCard } from "@/components/site/PropertyCard";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 import { toast } from "sonner";
+import PromotePropertyTab from "./PromotePropertyTab";
 
 export default function UserDashboard() {
   const { user, refreshUser } = useAuth();
+  const { tab } = useParams();
+  const navigate = useNavigate();
+  
   const isDealer = user?.role === "dealer";
   const isAdmin = user?.role === "admin";
   const userInitials = user?.name ? user.name.charAt(0).toUpperCase() : "U";
 
-  const [activeTab, setActiveTab] = useState("Overview");
+  // Determine initial tab from URL or default to "Overview"
+  const getTabLabelFromSlug = (slug) => {
+    if (!slug) return "Overview";
+    const slugMap = {
+      overview: "Overview",
+      listings: isAdmin ? "All Listings" : "My Listings",
+      promote: "Promote Property",
+      enquiries: "Enquiries",
+      saved: "Saved",
+      notifications: "Notifications",
+      subscription: "Subscription",
+      settings: "Settings"
+    };
+    return slugMap[slug] || "Overview";
+  };
+
+  const [activeTab, setActiveTab] = useState(getTabLabelFromSlug(tab));
   const [newName, setNewName] = useState(user?.name || "");
   const [updatingProfile, setUpdatingProfile] = useState(false);
   
+  // Keep activeTab in sync with URL
+  useEffect(() => {
+    setActiveTab(getTabLabelFromSlug(tab));
+  }, [tab, isAdmin]);
+
+  // Handle Tab change
+  const handleTabChange = (t) => {
+    setActiveTab(t.label);
+    navigate(`/dashboard/${t.path}`);
+  };
+
   // Keep input in sync with loaded profile
   useEffect(() => {
     if (user?.name) {
@@ -185,13 +217,14 @@ export default function UserDashboard() {
   ];
 
   const tabs = [
-    { label: "Overview", icon: BarChart3 },
-    ...(isDealer || isAdmin ? [{ label: isAdmin ? "All Listings" : "My Listings", icon: Home }] : []),
-    { label: "Enquiries", icon: MessageSquare },
-    { label: "Saved", icon: Heart },
-    { label: "Notifications", icon: Bell },
-    { label: "Subscription", icon: CreditCard },
-    { label: "Settings", icon: Settings },
+    { label: "Overview", path: "overview", icon: BarChart3 },
+    ...(isDealer || isAdmin ? [{ label: isAdmin ? "All Listings" : "My Listings", path: "listings", icon: Home }] : []),
+    ...(isDealer ? [{ label: "Promote Property", path: "promote", icon: TrendingUp }] : []),
+    { label: "Enquiries", path: "enquiries", icon: MessageSquare },
+    { label: "Saved", path: "saved", icon: Heart },
+    { label: "Notifications", path: "notifications", icon: Bell },
+    { label: "Subscription", path: "subscription", icon: CreditCard },
+    { label: "Settings", path: "settings", icon: Settings },
   ];
 
   return (
@@ -216,7 +249,7 @@ export default function UserDashboard() {
             {tabs.map((t) => (
               <button
                 key={t.label}
-                onClick={() => setActiveTab(t.label)}
+                onClick={() => handleTabChange(t)}
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                   activeTab === t.label
                     ? "bg-primary text-primary-foreground shadow-sm font-semibold"
@@ -259,7 +292,10 @@ export default function UserDashboard() {
                 {stats.map((s) => (
                   <button
                     key={s.label}
-                    onClick={() => setActiveTab(s.tab)}
+                    onClick={() => {
+                      const targetTab = tabs.find(t => t.label === s.tab);
+                      if (targetTab) handleTabChange(targetTab);
+                    }}
                     className="rounded-2xl border border-border bg-card p-5 shadow-sm text-left transition hover:border-primary hover:shadow-md active:scale-95"
                   >
                     <div className="flex items-center justify-between">
@@ -357,7 +393,14 @@ export default function UserDashboard() {
             </div>
           )}
 
-          {/* Tab 3: Enquiries (Received and Sent) */}
+          {/* Tab 3: Promote Property (Dealer only) */}
+          {activeTab === "Promote Property" && isDealer && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <PromotePropertyTab properties={dbProperties} refreshData={refreshUser} />
+            </div>
+          )}
+
+          {/* Tab 4: Enquiries (Received and Sent) */}
           {activeTab === "Enquiries" && (
             <div className="space-y-6">
               <div>

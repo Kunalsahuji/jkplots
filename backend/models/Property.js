@@ -118,6 +118,13 @@ const PropertySchema = new mongoose.Schema({
     enquiriesCount: {
         type: Number,
         default: 0
+    },
+    isFeatured: {
+        type: Boolean,
+        default: false
+    },
+    featuredUntil: {
+        type: Date
     }
 }, {
     timestamps: true

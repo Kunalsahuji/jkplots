@@ -159,6 +159,31 @@ const seedDatabase = async () => {
         });
         console.log('Default Admin created: admin@jkplot.com / Admin@123');
 
+        // Seed Promotion Plans
+        const PromotionPlan = require('./models/PromotionPlan');
+        await PromotionPlan.deleteMany({});
+        await PromotionPlan.insertMany([
+            {
+                name: 'Bronze Plan',
+                durationInDays: 7,
+                price: 199,
+                description: ['Top of search results', 'Featured badge on listing', '2x more views']
+            },
+            {
+                name: 'Silver Plan',
+                durationInDays: 15,
+                price: 399,
+                description: ['Top of search results', 'Featured badge on listing', '5x more views', 'Homepage showcase']
+            },
+            {
+                name: 'Gold Plan',
+                durationInDays: 30,
+                price: 799,
+                description: ['Top of search results', 'Featured badge on listing', '10x more views', 'Homepage showcase', 'Dedicated support']
+            }
+        ]);
+        console.log('Promotion Plans seeded successfully.');
+
         process.exit();
     } catch (error) {
         console.error('Error seeding database:', error);

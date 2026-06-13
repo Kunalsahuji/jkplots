@@ -16,6 +16,7 @@ import SavedPage from '@/pages/Saved/SavedPage';
 import AdminLogin from '@/pages/Admin/AdminLogin';
 import AdminLayout from '@/pages/Admin/AdminLayout';
 import AdminDashboard from '@/pages/Admin/AdminDashboard';
+import PromotionPlansAdmin from '@/pages/Admin/PromotionPlansAdmin';
 import EditPropertyPage from '@/pages/Properties/EditPropertyPage';
 import AboutPage from '@/pages/Static/AboutPage';
 import ContactPage from '@/pages/Static/ContactPage';
@@ -127,6 +128,7 @@ export default function AppRoutes() {
                 <Route path="/post-property" element={<ProtectedRoute><PostPropertyPage /></ProtectedRoute>} />
                 <Route path="/edit-property/:id" element={<ProtectedRoute><EditPropertyPage /></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
+                <Route path="/dashboard/:tab" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
                 <Route path="/saved" element={<ProtectedRoute><SavedPage /></ProtectedRoute>} />
             </Route>
 
@@ -160,6 +162,7 @@ export default function AppRoutes() {
             >
                 <Route index element={<AdminDashboard />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="promotions" element={<PromotionPlansAdmin />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

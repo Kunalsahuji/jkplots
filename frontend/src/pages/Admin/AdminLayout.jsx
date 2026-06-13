@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   X,
+  Star,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -32,6 +33,7 @@ const MENU_GROUPS = [
       { icon: Building2, label: "Dealer Management", path: "/admin/dealers" },
       { icon: Home, label: "Property Management", path: "/admin/properties" },
       { icon: MessageSquare, label: "Enquiries", path: "/admin/enquiries" },
+      { icon: Star, label: "Promotion Plans", path: "/admin/promotions" },
     ],
   },
   {

@@ -138,6 +138,19 @@ exports.getProperties = async (req, res, next) => {
             filterObj.bedrooms = Number(reqQuery.bedrooms);
         }
 
+        // isFeatured filter
+        if (reqQuery.isFeatured === 'true') {
+            filterObj.isFeatured = true;
+            filterObj.featuredUntil = { $gt: Date.now() };
+        } else if (reqQuery.isFeatured === 'false') {
+            filterObj.$or = [
+                { isFeatured: false },
+                { featuredUntil: { $lte: Date.now() } },
+                { featuredUntil: null },
+                { featuredUntil: { $exists: false } }
+            ];
+        }
+
         // Price parsing (budget bounds)
         const priceFilter = {};
         if (req.query['price[lte]']) {
