@@ -15,8 +15,8 @@ const formatPrice = (val) => {
 
 const resolveImage = (img) => {
   if (!img) return "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80";
-  if (img.startsWith("http") || img.startsWith("data:")) return img;
-  return `http://localhost:5000${img}`;
+  if (img.startsWith("http") || img.startsWith("data:") || img.startsWith("/src/")) return img;
+  return `http://localhost:5000${img.startsWith("/") ? "" : "/"}${img}`;
 };
 
 export function PropertyCard({ p }) {

@@ -202,7 +202,7 @@ export default function HomePage() {
         <SectionHeader title="Featured properties" sub="Hand-curated, verified, ready to visit" link="/properties" />
         <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
           {featured.map((p) => (
-            <PropertyCard key={p.id} p={p} />
+            <PropertyCard key={p._id || p.id} p={p} />
           ))}
         </div>
       </section>
@@ -271,7 +271,7 @@ export default function HomePage() {
         <SectionHeader title="Latest listings" sub="Fresh on the market this week" link="/properties" />
         <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
           {all.map((p) => (
-            <PropertyCard key={p.id} p={p} />
+            <PropertyCard key={p._id || p.id} p={p} />
           ))}
         </div>
       </section>
