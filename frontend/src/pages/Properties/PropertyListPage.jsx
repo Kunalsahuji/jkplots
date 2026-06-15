@@ -1,12 +1,11 @@
 import { useSearchParams } from "react-router-dom";
 import { useMemo, useState, useEffect } from "react";
 import { PropertyCard } from "@/components/site/PropertyCard";
-import { properties } from "@/utils/properties";
 import { SearchBar } from "@/components/site/SearchBar";
-import { SlidersHorizontal, LayoutGrid, List, X } from "lucide-react";
+import { SlidersHorizontal, LayoutGrid, List, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import api from "@/utils/api";
-import { motion } from "framer-motion";
+import { useProperties } from "@/hooks/useProperties";
+import { motion, AnimatePresence } from "framer-motion";
 
 const cityOpts = ["All", "Srinagar", "Jammu", "Gulmarg", "Pahalgam", "Anantnag", "Baramulla", "Udhampur"];
 const bedroomOpts = ["Any", "1+", "2+", "3+", "4+"];
@@ -25,8 +24,9 @@ export default function PropertyListPage() {
   const [furnished, setFurnished] = useState(false);
   const [sort, setSort] = useState("relevance");
 
-  const [dbProperties, setDbProperties] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const limit = 6; // 6 items per page fits a 3-column layout nicely
 
   // Dynamic types based on purpose
   const typeOpts = useMemo(() => {
@@ -47,7 +47,6 @@ export default function PropertyListPage() {
   }, [purpose, type, typeOpts]);
 
   useEffect(() => {
-    const fetchParams = {};
     const cityParam = searchParams.get("city");
     const purposeParam = searchParams.get("purpose");
     const typeParam = searchParams.get("type");
@@ -57,37 +56,48 @@ export default function PropertyListPage() {
     if (typeParam && typeParam !== "Any" && typeParam !== "All") setType(typeParam);
   }, [searchParams]);
 
+  // Reset to first page when any search parameter or filter changes
   useEffect(() => {
-    const fetchListings = async () => {
-      setLoading(true);
-      try {
-        const params = {};
-        const searchParam = searchParams.get("search");
-        if (searchParam) params.search = searchParam;
-        
-        if (city !== "All") params.city = city;
-        if (type !== "All") params.type = type;
-        if (purpose !== "All") params.purpose = purpose;
-        if (beds !== "Any") params.bedrooms = parseInt(beds);
-        
-        // Budget limit
-        params["price[lte]"] = budget;
+    setPage(1);
+  }, [city, type, purpose, beds, budget, sort, searchParams, verifiedOnly, furnished]);
 
-        if (sort === "price-asc") params.sort = "price";
-        if (sort === "price-desc") params.sort = "-price";
-
-        const { data } = await api.get("/properties", { params });
-        if (data.success) {
-          setDbProperties(data.data);
-        }
-      } catch (err) {
-        console.error("Failed to load listings:", err);
-      } finally {
-        setLoading(false);
-      }
+  // Prevent background body scrolling when mobile filter drawer is active
+  useEffect(() => {
+    if (filtersOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
     };
-    fetchListings();
-  }, [city, type, purpose, beds, budget, sort, searchParams]);
+  }, [filtersOpen]);
+
+  // Compute API query filters
+  const apiParams = useMemo(() => {
+    const params = { page, limit };
+    const searchParam = searchParams.get("search");
+    if (searchParam) params.search = searchParam;
+    
+    if (city !== "All") params.city = city;
+    if (type !== "All") params.type = type;
+    if (purpose !== "All") params.purpose = purpose;
+    if (beds !== "Any") params.bedrooms = parseInt(beds);
+    
+    // Budget limit
+    params["price[lte]"] = budget;
+
+    if (sort === "price-asc") params.sort = "price";
+    if (sort === "price-desc") params.sort = "-price";
+
+    return params;
+  }, [city, type, purpose, beds, budget, sort, searchParams, page]);
+
+  // Query properties using React Query hook
+  const { data: propertiesData, isLoading } = useProperties(apiParams);
+
+  const dbProperties = propertiesData?.data || [];
+  const pagination = propertiesData?.pagination || null;
 
   const filtered = useMemo(() => {
     let list = dbProperties;
@@ -104,6 +114,7 @@ export default function PropertyListPage() {
     setBudget(50000000);
     setVerifiedOnly(false);
     setFurnished(false);
+    setPage(1);
   };
 
   const Filters = (
@@ -172,7 +183,9 @@ export default function PropertyListPage() {
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h1 className="font-display text-2xl font-bold">Properties in J&amp;K</h1>
-              <p className="text-sm text-muted-foreground">{filtered.length} results</p>
+              <p className="text-sm text-muted-foreground">
+                {isLoading ? "Loading..." : `${filtered.length} listings this page`}
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -211,7 +224,7 @@ export default function PropertyListPage() {
             </div>
           </div>
 
-          {loading ? (
+          {isLoading ? (
             <div className={view === "grid" ? "grid gap-5 sm:grid-cols-2 xl:grid-cols-3" : "space-y-5"}>
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="animate-pulse rounded-3xl border border-border bg-card p-4">
@@ -231,36 +244,99 @@ export default function PropertyListPage() {
               <p className="mt-2 text-sm text-muted-foreground">Try widening your search or resetting filters.</p>
             </div>
           ) : (
-            <div className={view === "grid" ? "grid gap-5 sm:grid-cols-2 xl:grid-cols-3" : "space-y-5"}>
-              {filtered.map((p) => (
-                <PropertyCard key={p._id || p.id} p={p} />
-              ))}
-            </div>
+            <>
+              <div className={view === "grid" ? "grid gap-5 sm:grid-cols-2 xl:grid-cols-3" : "space-y-5"}>
+                {filtered.map((p) => (
+                  <PropertyCard key={p._id || p.id} p={p} />
+                ))}
+              </div>
+
+              {/* Server-side Pagination Navigation */}
+              {pagination && pagination.totalPages > 1 && (
+                <div className="mt-8 flex items-center justify-center gap-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={page === 1}
+                    className="rounded-full"
+                  >
+                    <ChevronLeft className="mr-1 h-4 w-4" /> Prev
+                  </Button>
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    Page {page} of {pagination.totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((prev) => Math.min(prev + 1, pagination.totalPages))}
+                    disabled={page === pagination.totalPages}
+                    className="rounded-full"
+                  >
+                    Next <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
 
       {/* Mobile filters drawer */}
-      {filtersOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-foreground/50" onClick={() => setFiltersOpen(false)} />
-          <div className="absolute inset-y-0 right-0 w-full max-w-sm overflow-y-auto bg-background p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-display text-xl font-bold">Filters</h3>
-              <button
-                onClick={() => setFiltersOpen(false)}
-                className="grid h-9 w-9 place-items-center rounded-full border border-border"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            {Filters}
-            <Button onClick={() => setFiltersOpen(false)} className="mt-6 w-full rounded-full bg-primary">
-              Show {filtered.length} results
-            </Button>
+      <AnimatePresence>
+        {filtersOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setFiltersOpen(false)}
+              className="absolute inset-0 bg-foreground/35 backdrop-blur-sm"
+            />
+            {/* Drawer */}
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="absolute inset-y-0 right-0 flex h-full w-full max-w-sm flex-col bg-background shadow-2xl border-l border-border"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-border px-6 py-4">
+                <div>
+                  <h3 className="font-display text-lg font-bold">Filters</h3>
+                  <p className="text-xs text-muted-foreground">Narrow down your results</p>
+                </div>
+                <button
+                  onClick={() => setFiltersOpen(false)}
+                  className="grid h-9 w-9 place-items-center rounded-full border border-border hover:bg-secondary transition"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Scrollable Filters Content */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active Filters</span>
+                  <button onClick={handleReset} className="text-xs font-semibold text-primary hover:underline">
+                    Reset All
+                  </button>
+                </div>
+                {Filters}
+              </div>
+
+              {/* Footer CTA */}
+              <div className="border-t border-border p-6 bg-secondary/10">
+                <Button onClick={() => setFiltersOpen(false)} className="w-full rounded-full bg-primary py-6 text-sm font-semibold shadow-md">
+                  Show {filtered.length} results
+                </Button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

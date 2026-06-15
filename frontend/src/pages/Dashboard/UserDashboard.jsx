@@ -19,7 +19,9 @@ import {
   User,
   Check,
   X,
-  FileText
+  FileText,
+  Menu,
+  LogOut
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PropertyCard } from "@/components/site/PropertyCard";
@@ -30,7 +32,7 @@ import PromotePropertyTab from "./PromotePropertyTab";
 import KycSection from "./KycSection";
 
 export default function UserDashboard() {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
   const { tab } = useParams();
   const navigate = useNavigate();
   
@@ -57,6 +59,7 @@ export default function UserDashboard() {
   const [activeTab, setActiveTab] = useState(getTabLabelFromSlug(tab));
   const [newName, setNewName] = useState(user?.name || "");
   const [updatingProfile, setUpdatingProfile] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Keep activeTab in sync with URL
   useEffect(() => {
@@ -233,20 +236,22 @@ export default function UserDashboard() {
       <div className="container-px mx-auto grid max-w-7xl gap-8 py-8 lg:grid-cols-[240px_1fr]">
         {/* Sidebar */}
         <aside className="space-y-4">
-          <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="rounded-2xl border border-border bg-card p-4 sm:p-5">
             <div className="flex items-center gap-3">
-              <div className="grid h-12 w-12 place-items-center rounded-full bg-gradient-hero font-bold text-primary-foreground">
+              <div className="grid h-12 w-12 place-items-center rounded-full bg-gradient-hero font-bold text-primary-foreground shrink-0">
                 {userInitials}
               </div>
-              <div>
-                <div className="font-semibold text-sm truncate max-w-[140px]">{user?.name || "User"}</div>
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-sm truncate">{user?.name || "User"}</div>
                 <div className="text-xs text-muted-foreground capitalize font-medium">
                   {isAdmin ? "System Admin" : isDealer ? "Premium Dealer" : `${user?.role || "user"} Profile`}
                 </div>
               </div>
             </div>
           </div>
-          <nav className="rounded-2xl border border-border bg-card p-2 space-y-1">
+
+          {/* Desktop Navigation Menu (hidden on mobile, visible on lg) */}
+          <nav className="hidden lg:block rounded-2xl border border-border bg-card p-2 space-y-1">
             {tabs.map((t) => (
               <button
                 key={t.label}
@@ -261,10 +266,79 @@ export default function UserDashboard() {
               </button>
             ))}
           </nav>
+
+          {/* Mobile Navigation Selector (visible on mobile, hidden on lg) */}
+          <div className="lg:hidden relative">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="flex w-full items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground shadow-sm hover:bg-secondary/40 transition-all active:scale-[0.99]"
+            >
+              <div className="flex items-center gap-2.5">
+                {(() => {
+                  const activeItem = tabs.find(t => t.label === activeTab) || tabs[0];
+                  const Icon = activeItem.icon;
+                  return (
+                    <>
+                      <Icon className="h-4 w-4 text-primary" />
+                      <span>{activeItem.label}</span>
+                    </>
+                  );
+                })()}
+              </div>
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <span className="text-xs font-normal">Menu</span>
+                <Menu className="h-4 w-4" />
+              </div>
+            </button>
+
+            {/* Dropdown Options List */}
+            {mobileMenuOpen && (
+              <>
+                {/* Backdrop overlay to close when clicking outside */}
+                <div className="fixed inset-0 z-20" onClick={() => setMobileMenuOpen(false)} />
+                
+                <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 rounded-2xl border border-border bg-card p-2 shadow-lg animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="space-y-0.5 max-h-[60vh] overflow-y-auto">
+                    {tabs.map((t) => {
+                      const Icon = t.icon;
+                      return (
+                        <button
+                          key={t.label}
+                          onClick={() => {
+                            handleTabChange(t);
+                            setMobileMenuOpen(false);
+                          }}
+                          className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium transition ${
+                            activeTab === t.label
+                              ? "bg-primary-soft text-primary font-semibold"
+                              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                          }`}
+                        >
+                          <Icon className="h-4 w-4 shrink-0" />
+                          <span>{t.label}</span>
+                        </button>
+                      );
+                    })}
+                    <button
+                      onClick={async () => {
+                        setMobileMenuOpen(false);
+                        await logout();
+                        navigate("/", { replace: true });
+                      }}
+                      className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium text-destructive hover:bg-destructive/10 transition mt-1 pt-3 border-t border-border"
+                    >
+                      <LogOut className="h-4 w-4 shrink-0" />
+                      <span>Logout</span>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </aside>
 
         {/* Main */}
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           {/* Header row */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>

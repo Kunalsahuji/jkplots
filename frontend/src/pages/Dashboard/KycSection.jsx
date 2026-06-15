@@ -73,23 +73,23 @@ export default function KycSection() {
 
   if (kycStatus === "approved") {
     return (
-      <div className="rounded-2xl relative overflow-hidden bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-teal-500/10 border border-green-500/20 p-8 flex items-start gap-5 mt-6 shadow-sm">
+      <div className="rounded-2xl relative overflow-hidden bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-teal-500/10 border border-green-500/20 p-5 sm:p-8 flex flex-col sm:flex-row items-start gap-4 mt-6 shadow-sm">
         <div className="absolute -right-10 -top-10 opacity-[0.07]">
           <ShieldCheck className="h-48 w-48 text-green-600" />
         </div>
         <div className="relative z-10 bg-gradient-to-br from-green-400 to-emerald-600 text-white p-3 rounded-2xl shadow-md shrink-0">
           <ShieldCheck className="h-8 w-8" />
         </div>
-        <div className="relative z-10">
-          <h3 className="font-bold text-2xl text-green-900 flex items-center gap-2">
-            Verified Premium Dealer <BadgeCheck className="h-6 w-6 text-green-600" />
+        <div className="relative z-10 min-w-0">
+          <h3 className="font-bold text-lg sm:text-2xl text-green-900 flex flex-wrap items-center gap-2">
+            Verified Premium Dealer <BadgeCheck className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 shrink-0" />
           </h3>
-          <p className="text-sm text-green-800 mt-2 leading-relaxed max-w-xl">
+          <p className="text-xs sm:text-sm text-green-800 mt-2 leading-relaxed max-w-xl">
             Congratulations! Your identity has been verified. All your listed properties now automatically feature the <strong>Verified Badge</strong>, building 10x more trust with prospective buyers and giving your listings premium visibility.
           </p>
-          <div className="mt-5 inline-flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-lg border border-green-500/20 shadow-sm">
-            <span className="text-xs uppercase tracking-wider font-bold text-green-900/60">Verified PAN:</span>
-            <span className="text-sm font-black tracking-widest text-green-900">{user?.panNumber?.replace(/.(?=.{4})/g, '•')}</span>
+          <div className="mt-5 inline-flex flex-wrap items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-white/60 backdrop-blur-sm rounded-lg border border-green-500/20 shadow-sm">
+            <span className="text-[10px] sm:text-xs uppercase tracking-wider font-bold text-green-900/60">Verified PAN:</span>
+            <span className="text-xs sm:text-sm font-black tracking-widest text-green-900">{user?.panNumber?.replace(/.(?=.{4})/g, '•')}</span>
           </div>
         </div>
       </div>
@@ -98,18 +98,18 @@ export default function KycSection() {
 
   if (kycStatus === "pending" && step === "form") {
     return (
-      <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-6 flex items-start gap-5 mt-6 shadow-sm">
+      <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5 sm:p-6 flex flex-col sm:flex-row items-start gap-4 mt-6 shadow-sm">
         <div className="bg-gradient-to-br from-amber-400 to-orange-500 text-white p-3 rounded-2xl shadow-md shrink-0">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
-        <div>
-          <h3 className="font-bold text-xl text-amber-900">Verification Pending</h3>
-          <p className="text-sm text-amber-800 mt-1 max-w-lg">
+        <div className="min-w-0">
+          <h3 className="font-bold text-lg sm:text-xl text-amber-900">Verification Pending</h3>
+          <p className="text-xs sm:text-sm text-amber-800 mt-1 max-w-lg">
             Your KYC details are currently under review. If you haven't verified the OTP yet, you need to complete that step first to proceed.
           </p>
           <button 
             onClick={() => { setStep("otp"); setPanNumber(user?.panNumber); setPanName(user?.panName); }}
-            className="mt-4 px-4 py-2 bg-white rounded-lg border border-amber-200 text-sm font-bold text-amber-800 shadow-sm hover:bg-amber-50 transition-colors"
+            className="mt-4 px-4 py-2 bg-white rounded-lg border border-amber-200 text-xs sm:text-sm font-bold text-amber-800 shadow-sm hover:bg-amber-50 transition-colors"
           >
             I have an OTP to verify
           </button>
@@ -119,7 +119,7 @@ export default function KycSection() {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-sm mt-6">
+    <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-sm mt-6">
       <div className="mb-6 flex items-start justify-between">
         <div>
           <h3 className="font-display text-lg font-bold flex items-center gap-2">

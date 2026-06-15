@@ -67,7 +67,8 @@ export default function HomePage() {
   return (
     <div>
       {/* HERO */}
-      <section className="relative overflow-hidden min-h-[500px] md:min-h-[600px] lg:min-h-[700px] flex items-center">
+      {/* HERO */}
+      <section className="relative overflow-hidden h-[calc(100vh-64px)] flex items-center">
         <div className="absolute inset-0">
           {heroImages.map((img, index) => (
             <img
@@ -96,20 +97,20 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-        <div className="relative container-px mx-auto w-full max-w-7xl pb-16 pt-16 md:pb-24 md:pt-20 lg:pb-28 lg:pt-24 z-10">
+        <div className="relative container-px mx-auto w-full max-w-7xl pb-8 pt-8 md:pb-16 md:pt-16 z-10">
           <div className="max-w-3xl text-background">
             <span className="inline-flex items-center gap-2 rounded-full border border-background/30 bg-background/10 px-3 py-1.5 text-xs font-medium backdrop-blur">
               <Sparkles className="h-3.5 w-3.5 text-accent" /> J&amp;K's most trusted marketplace
             </span>
-            <h1 className="mt-5 font-display text-4xl font-bold leading-[1.05] md:text-6xl lg:text-7xl">
+            <h1 className="mt-4 font-display text-3xl font-bold leading-[1.1] sm:text-4xl md:text-6xl lg:text-7xl">
               Find your place<br />in the <span className="text-accent">valley.</span>
             </h1>
-            <p className="mt-5 max-w-xl text-base text-background/85 md:text-lg">
+            <p className="mt-4 max-w-xl text-sm text-background/85 sm:text-base md:text-lg">
               Verified villas, apartments, plots and commercial spaces across Jammu &amp; Kashmir — handpicked, transparent, real.
             </p>
           </div>
 
-          <div className="mt-10 md:mt-12">
+          <div className="mt-8 md:mt-10">
             <SearchBar />
           </div>
 
@@ -121,8 +122,8 @@ export default function HomePage() {
               ["4.8★", "User rating"],
             ].map(([n, l]) => (
               <div key={l}>
-                <div className="font-display text-2xl font-bold">{n}</div>
-                <div className="text-xs text-background/70">{l}</div>
+                <div className="font-display text-xl font-bold md:text-2xl">{n}</div>
+                <div className="text-[10px] text-background/70 md:text-xs">{l}</div>
               </div>
             ))}
           </div>
@@ -137,7 +138,7 @@ export default function HomePage() {
             <h2 className="mt-2 font-display text-3xl font-bold md:text-4xl">Browse by purpose</h2>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+        <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-4 md:grid md:grid-cols-4">
           {[
             {
               label: "Buy a Home",
@@ -171,7 +172,7 @@ export default function HomePage() {
             <Link
               key={c.label}
               to={`/properties?${c.query}`}
-              className="group relative block aspect-[4/5] overflow-hidden rounded-2xl border border-border bg-card shadow-soft transition-all hover:-translate-y-1 hover:shadow-elevated"
+              className="group relative block aspect-[4/5] w-[240px] sm:w-[280px] md:w-auto shrink-0 snap-start overflow-hidden rounded-2xl border border-border bg-card shadow-soft transition-all hover:-translate-y-1 hover:shadow-elevated"
             >
               <img
                 src={c.img}
@@ -201,7 +202,7 @@ export default function HomePage() {
       {featured && featured.length > 0 && (
         <section className="container-px mx-auto max-w-7xl py-12">
           <SectionHeader title="Featured properties" sub="Hand-curated, verified, ready to visit" link="/properties" />
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {featured.map((p) => (
               <PropertyCard key={p._id || p.id} p={p} />
             ))}
@@ -271,7 +272,7 @@ export default function HomePage() {
       {/* LATEST */}
       <section className="container-px mx-auto max-w-7xl py-16">
         <SectionHeader title="Latest listings" sub="Fresh on the market this week" link="/properties" />
-        <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {all.map((p) => (
             <PropertyCard key={p._id || p.id} p={p} />
           ))}

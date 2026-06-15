@@ -163,7 +163,11 @@ exports.getProperties = async (req, res, next) => {
             filterObj.price = priceFilter;
         }
 
-        let query = Property.find(filterObj);
+        // Pagination parameters
+        const page = parseInt(req.query.page, 10);
+        const limit = parseInt(req.query.limit, 10);
+
+        let query = Property.find(filterObj).lean();
 
         // Sort
         if (req.query.sort) {
@@ -173,11 +177,25 @@ exports.getProperties = async (req, res, next) => {
             query = query.sort('-createdAt');
         }
 
+        const total = await Property.countDocuments(filterObj);
+
+        // Apply pagination if parameters exist
+        if (page && limit) {
+            const startIndex = (page - 1) * limit;
+            query = query.skip(startIndex).limit(limit);
+        }
+
         const properties = await query;
 
         res.status(200).json({
             success: true,
+            total,
             count: properties.length,
+            pagination: page && limit ? {
+                currentPage: page,
+                totalPages: Math.ceil(total / limit),
+                limit
+            } : null,
             data: properties
         });
     } catch (err) {

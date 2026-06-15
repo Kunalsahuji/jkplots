@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, Search, Heart, User, Menu, X, Plus, LogOut } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 
@@ -21,6 +21,7 @@ export function Header() {
 
   const { user, isAuthenticated, logout } = useAuth();
   const showPostProperty = isAuthenticated && user?.role === "dealer";
+  const filteredNav = nav.filter((n) => n.to !== "/dashboard" || isAuthenticated);
 
   const handleLogout = async () => {
     await logout();
@@ -28,26 +29,28 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/85 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/85 backdrop-blur-xl shadow-sm text-foreground">
       <div className="container-px mx-auto flex h-16 max-w-7xl items-center justify-between gap-4">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/" onClick={() => setOpen(false)} className="flex items-center gap-2">
           <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-hero text-primary-foreground shadow-soft">
             <Home className="h-4 w-4" />
           </span>
-          <span className="font-display text-xl font-bold tracking-tight">
+          <span className="font-display text-xl font-bold tracking-tight text-foreground">
             JK<span className="text-primary">PLOT</span>
           </span>
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex">
-          {nav.map((n) => {
+          {filteredNav.map((n) => {
             const isActive = currentPath === n.to || (n.to !== "/" && currentPath.startsWith(n.to));
             return (
               <Link
                 key={n.label}
                 to={n.to}
-                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary hover:text-foreground ${
-                  isActive ? "text-foreground bg-secondary" : "text-muted-foreground"
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                  isActive 
+                    ? "text-foreground bg-secondary" 
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                 }`}
               >
                 {n.label}
@@ -59,7 +62,10 @@ export function Header() {
         <div className="flex items-center gap-2">
           {isAuthenticated ? (
             <>
-              <Link to="/dashboard" className="hidden items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground sm:inline-flex">
+              <Link 
+                to="/dashboard" 
+                className="hidden items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground sm:inline-flex"
+              >
                 <User className="h-4 w-4" /> {user?.name?.split(' ')[0]}
               </Link>
               <button
@@ -70,7 +76,10 @@ export function Header() {
               </button>
             </>
           ) : (
-            <Link to="/auth" className="hidden text-sm font-medium text-muted-foreground hover:text-foreground sm:inline">
+            <Link 
+              to="/auth" 
+              className="hidden text-sm font-medium text-muted-foreground hover:text-foreground sm:inline"
+            >
               Sign in
             </Link>
           )}
@@ -83,7 +92,7 @@ export function Header() {
           )}
           <button
             onClick={() => setOpen(!open)}
-            className="grid h-10 w-10 place-items-center rounded-lg border border-border lg:hidden"
+            className="grid h-10 w-10 place-items-center rounded-lg border border-border text-foreground hover:bg-secondary lg:hidden"
             aria-label="Menu"
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -94,7 +103,7 @@ export function Header() {
       {open && (
         <div className="border-t border-border bg-background lg:hidden">
           <div className="container-px mx-auto flex max-w-7xl flex-col gap-1 py-3">
-            {nav.map((n) => {
+            {filteredNav.map((n) => {
               const isActive = currentPath === n.to || (n.to !== "/" && currentPath.startsWith(n.to));
               return (
                 <Link
@@ -102,7 +111,9 @@ export function Header() {
                   to={n.to}
                   onClick={() => setOpen(false)}
                   className={`rounded-lg px-3 py-3 text-sm font-medium hover:bg-secondary ${
-                    isActive ? "text-foreground bg-secondary" : "text-muted-foreground"
+                    isActive 
+                      ? "text-foreground bg-secondary" 
+                      : "text-muted-foreground"
                   }`}
                 >
                   {n.label}
@@ -114,6 +125,25 @@ export function Header() {
                 <Button className="mt-2 w-full rounded-full bg-foreground text-background">Post Property — FREE</Button>
               </Link>
             )}
+            {isAuthenticated ? (
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  handleLogout();
+                }}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-destructive hover:bg-destructive/10 text-left border-t border-border mt-2 pt-3"
+              >
+                <LogOut className="h-4 w-4" /> Logout ({user?.name?.split(' ')[0]})
+              </button>
+            ) : (
+              <Link
+                to="/auth"
+                onClick={() => setOpen(false)}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-primary hover:bg-primary-soft/30 text-left border-t border-border mt-2 pt-3"
+              >
+                <User className="h-4 w-4" /> Sign in
+              </Link>
+            )}
           </div>
         </div>
       )}
@@ -122,11 +152,12 @@ export function Header() {
 }
 
 export function MobileTabBar() {
+  const { isAuthenticated } = useAuth();
   const items = [
     { to: "/", label: "Home", icon: Home },
     { to: "/explore", label: "Explore", icon: Search },
     { to: "/saved", label: "Saved", icon: Heart },
-    { to: "/dashboard", label: "Account", icon: User },
+    { to: isAuthenticated ? "/dashboard" : "/auth", label: isAuthenticated ? "Account" : "Sign in", icon: User },
   ];
   const location = useLocation();
   const currentPath = location.pathname;
