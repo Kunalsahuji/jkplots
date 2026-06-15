@@ -26,9 +26,16 @@ api.interceptors.response.use(
         const status = error.response?.status;
 
         // 401 Unauthorized — session expired or invalid token
-        // Redirect to login only if not already on the auth page
-        if (status === 401 && !window.location.pathname.startsWith('/auth')) {
-            window.location.href = `/auth?redirect=${window.location.pathname}`;
+        // Redirect to login appropriately for frontend vs admin portals
+        if (status === 401) {
+            const path = window.location.pathname;
+            if (path.startsWith('/admin')) {
+                if (path !== '/admin/login') {
+                    window.location.href = '/admin/login';
+                }
+            } else if (!path.startsWith('/auth')) {
+                window.location.href = `/auth?redirect=${path}`;
+            }
         }
 
         // Always reject so individual call sites can handle their own errors

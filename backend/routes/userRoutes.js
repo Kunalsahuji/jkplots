@@ -10,7 +10,8 @@ const {
     toggleSaveProperty,
     updateProfile,
     initiateKYC,
-    verifyKYCOTP
+    verifyKYCOTP,
+    adminUpdateUser
 } = require('../controllers/userController');
 
 const { protect, authorize } = require('../middleware/auth');
@@ -26,6 +27,7 @@ router.get('/me', protect, getMe);
 router.put('/me', protect, updateProfile);
 router.post('/logout', protect, logout);
 router.get('/', protect, authorize('admin'), getUsers);
+router.put('/:id', protect, authorize('admin'), adminUpdateUser);
 router.post('/save-property/:propertyId', protect, toggleSaveProperty);
 
 router.post('/kyc/initiate', protect, initiateKYC);

@@ -266,3 +266,35 @@ exports.verifyKYCOTP = asyncHandler(async (req, res, next) => {
         data: sanitizeUser(user)
     });
 });
+
+// @desc    Admin update user details (role, KYC, isActive)
+// @route   PUT /api/users/:id
+// @access  Private (Admin/Superadmin)
+exports.adminUpdateUser = asyncHandler(async (req, res, next) => {
+    const { role, kycStatus, isActive } = req.body;
+
+    let user = await User.findById(req.params.id);
+    if (!user) {
+        return next(new ErrorResponse('User not found', 404));
+    }
+
+    if (role !== undefined) user.role = role;
+    
+    if (kycStatus !== undefined) {
+        user.kycStatus = kycStatus;
+        if (kycStatus === 'approved') {
+            const Property = require('../models/Property');
+            await Property.updateMany({ dealer: user._id }, { $set: { verified: true } });
+        }
+    }
+    
+    if (isActive !== undefined) user.isActive = isActive;
+
+    await user.save();
+
+    res.status(200).json({
+        success: true,
+        message: 'User updated successfully',
+        data: sanitizeUser(user)
+    });
+});

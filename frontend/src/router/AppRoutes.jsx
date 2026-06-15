@@ -23,8 +23,13 @@ const AuthPage = lazy(() => import('@/pages/Auth/AuthPage'));
 const SavedPage = lazy(() => import('@/pages/Saved/SavedPage'));
 const AdminLogin = lazy(() => import('@/pages/Admin/AdminLogin'));
 const AdminLayout = lazy(() => import('@/pages/Admin/AdminLayout'));
-const AdminDashboard = lazy(() => import('@/pages/Admin/AdminDashboard'));
+const AdminDashboard = lazy(() => import('@/pages/Admin/AdminDashboardPage'));
+const AdminUsersPage = lazy(() => import('@/pages/Admin/AdminUsersPage'));
+const AdminDealersPage = lazy(() => import('@/pages/Admin/AdminDealersPage'));
+const AdminPropertiesPage = lazy(() => import('@/pages/Admin/AdminPropertiesPage'));
+const AdminEnquiriesPage = lazy(() => import('@/pages/Admin/AdminEnquiriesPage'));
 const PromotionPlansAdmin = lazy(() => import('@/pages/Admin/PromotionPlansAdmin'));
+const AdminSettingsPage = lazy(() => import('@/pages/Admin/AdminSettingsPage'));
 const EditPropertyPage = lazy(() => import('@/pages/Properties/EditPropertyPage'));
 const AboutPage = lazy(() => import('@/pages/Static/AboutPage'));
 const ContactPage = lazy(() => import('@/pages/Static/ContactPage'));
@@ -226,8 +231,23 @@ export default function AppRoutes() {
                 <Route path="dashboard" element={
                     <Suspense fallback={<PageSkeleton />}><AdminDashboard /></Suspense>
                 } />
+                <Route path="users" element={
+                    <Suspense fallback={<PageSkeleton />}><AdminUsersPage /></Suspense>
+                } />
+                <Route path="dealers" element={
+                    <Suspense fallback={<PageSkeleton />}><AdminDealersPage /></Suspense>
+                } />
+                <Route path="properties" element={
+                    <Suspense fallback={<PageSkeleton />}><AdminPropertiesPage /></Suspense>
+                } />
+                <Route path="enquiries" element={
+                    <Suspense fallback={<PageSkeleton />}><AdminEnquiriesPage /></Suspense>
+                } />
                 <Route path="promotions" element={
                     <Suspense fallback={<PageSkeleton />}><PromotionPlansAdmin /></Suspense>
+                } />
+                <Route path="settings" element={
+                    <Suspense fallback={<PageSkeleton />}><AdminSettingsPage /></Suspense>
                 } />
             </Route>
 

@@ -60,13 +60,16 @@ exports.protect = asyncHandler(async (req, res, next) => {
  * router.post('/admin', protect, authorize('admin'), controller)
  */
 exports.authorize = (...roles) => (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-        return next(
-            new ErrorResponse(
-                `Role '${req.user.role}' is not authorized to access this route.`,
-                403
-            )
-        );
+    // superadmin has full access, otherwise verify role is included
+    const userRole = req.user?.role;
+    if (userRole === 'superadmin' || roles.includes(userRole)) {
+        return next();
     }
-    next();
+    
+    return next(
+        new ErrorResponse(
+            `Role '${userRole}' is not authorized to access this route.`,
+            403
+        )
+    );
 };
