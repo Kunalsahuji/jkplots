@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Home, Search, Loader2, CheckCircle2, Star, Pencil, Trash2, SlidersHorizontal, Eye, X, Mail, Phone, Video } from "lucide-react";
 import api from "@/utils/api";
 import { toast } from "sonner";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 const formatPrice = (val) => {
   if (!val) return "₹—";
@@ -20,6 +21,13 @@ export default function AdminPropertiesPage() {
   const [verificationFilter, setVerificationFilter] = useState("all");
   const [featuredFilter, setFeaturedFilter] = useState("all");
   const [actionLoadingId, setActionLoadingId] = useState(null);
+
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {}
+  });
 
   // Property Details Drawer state
   const [selectedProperty, setSelectedProperty] = useState(null);
@@ -67,8 +75,16 @@ export default function AdminPropertiesPage() {
     }
   };
 
+  const handleDeletePropertyClick = (id) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete Property Listing",
+      message: "Are you sure you want to delete this property listing?",
+      onConfirm: () => handleDeleteProperty(id)
+    });
+  };
+
   const handleDeleteProperty = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this property listing?")) return;
     setActionLoadingId(id);
     try {
       const { data } = await api.delete(`/properties/${id}`);
@@ -302,7 +318,7 @@ export default function AdminPropertiesPage() {
                               <Pencil className="h-3.5 w-3.5" />
                             </Link>
                             <button
-                              onClick={() => handleDeleteProperty(id)}
+                              onClick={() => handleDeletePropertyClick(id)}
                               disabled={actionLoadingId === id}
                               className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-100 bg-red-50/50 text-red-600 hover:bg-red-50 hover:text-red-700 transition-all"
                               title="Delete Listing"
@@ -500,6 +516,14 @@ export default function AdminPropertiesPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+      />
     </div>
   );
 }

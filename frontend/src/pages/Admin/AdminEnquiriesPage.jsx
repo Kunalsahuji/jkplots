@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Search, Loader2, MessageSquare, Phone, User, Calendar, CheckCircle2, Eye, X, Home, Trash2 } from "lucide-react";
 import api from "@/utils/api";
 import { toast } from "sonner";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 export default function AdminEnquiriesPage() {
   const [enquiries, setEnquiries] = useState([]);
@@ -9,6 +10,13 @@ export default function AdminEnquiriesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [updatingId, setUpdatingId] = useState(null);
+
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {}
+  });
 
   // Enquiry Details Drawer state
   const [selectedEnquiry, setSelectedEnquiry] = useState(null);
@@ -32,8 +40,16 @@ export default function AdminEnquiriesPage() {
     fetchEnquiries();
   }, []);
 
+  const handleDeleteEnquiryClick = (id) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete Enquiry Listing",
+      message: "Are you sure you want to delete this enquiry listing?",
+      onConfirm: () => handleDeleteEnquiry(id)
+    });
+  };
+
   const handleDeleteEnquiry = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this enquiry listing?")) return;
     try {
       const { data } = await api.delete(`/enquiries/${id}`);
       if (data.success) {
@@ -210,7 +226,7 @@ export default function AdminEnquiriesPage() {
                             <option value="Closed">Closed</option>
                           </select>
                           <button
-                            onClick={() => handleDeleteEnquiry(e._id)}
+                            onClick={() => handleDeleteEnquiryClick(e._id)}
                             className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-all"
                             title="Delete Enquiry Log"
                           >
@@ -325,7 +341,7 @@ export default function AdminEnquiriesPage() {
                 <div className="space-y-3 pt-4 border-t border-slate-100">
                   <h4 className="text-xs font-bold text-red-500 uppercase tracking-wider">Danger Zone</h4>
                   <button
-                    onClick={() => handleDeleteEnquiry(selectedEnquiry._id)}
+                    onClick={() => handleDeleteEnquiryClick(selectedEnquiry._id)}
                     className="w-full px-4 py-2 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 font-bold text-xs uppercase rounded-xl transition flex items-center justify-center gap-1.5"
                   >
                     <Trash2 className="h-4 w-4" /> Delete Enquiry Log
@@ -338,6 +354,14 @@ export default function AdminEnquiriesPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+      />
     </div>
   );
 }

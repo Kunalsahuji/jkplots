@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Search, Loader2, CheckCircle2, XCircle, AlertTriangle, ShieldCheck, Eye, X, Home, Mail, Phone, Trash2 } from "lucide-react";
 import api from "@/utils/api";
 import { toast } from "sonner";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 export default function AdminDealersPage() {
   const [dealers, setDealers] = useState([]);
@@ -9,6 +10,14 @@ export default function AdminDealersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [processingId, setProcessingId] = useState(null);
+
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+    isDanger: true
+  });
 
   // Detail Drawer state
   const [selectedDealer, setSelectedDealer] = useState(null);
@@ -36,8 +45,17 @@ export default function AdminDealersPage() {
     fetchDealers();
   }, []);
 
+  const handleDeleteDealerClick = (dealerId) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete Dealer Account",
+      message: "Are you sure you want to delete this dealer? All listed properties and callback enquiries will be permanently deleted.",
+      onConfirm: () => handleDeleteDealer(dealerId),
+      isDanger: true
+    });
+  };
+
   const handleDeleteDealer = async (dealerId) => {
-    if (!window.confirm("Are you sure you want to delete this dealer? All listed properties and callback enquiries will be permanently deleted.")) return;
     try {
       const { data } = await api.delete(`/users/${dealerId}`);
       if (data.success) {
@@ -84,10 +102,17 @@ export default function AdminDealersPage() {
     }
   };
 
-  const handleUpdateKYC = async (id, status) => {
-    const confirmMsg = `Are you sure you want to set this dealer's KYC status to ${status.toUpperCase()}?`;
-    if (!window.confirm(confirmMsg)) return;
+  const handleUpdateKYCClick = (id, status) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Update KYC Status",
+      message: `Are you sure you want to set this dealer's KYC status to ${status.toUpperCase()}?`,
+      onConfirm: () => handleUpdateKYC(id, status),
+      isDanger: status === "rejected"
+    });
+  };
 
+  const handleUpdateKYC = async (id, status) => {
     setProcessingId(id);
     try {
       const { data } = await api.put(`/users/${id}`, { kycStatus: status });
@@ -232,24 +257,24 @@ export default function AdminDealersPage() {
                               <Eye className="h-3.5 w-3.5" /> Details
                             </button>
                             <button
-                              onClick={() => handleUpdateKYC(id, "approved")}
-                              disabled={processingId === id || d.kycStatus === "approved"}
-                              className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-bold transition-all border ${
-                                d.kycStatus === "approved"
-                                  ? "bg-emerald-100/50 text-emerald-800 border-transparent cursor-not-allowed"
-                                  : "bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-                              }`}
-                            >
-                              <ShieldCheck className="h-3.5 w-3.5" />
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => handleDeleteDealer(id)}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-all"
-                              title="Delete Dealer"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
+                               onClick={() => handleUpdateKYCClick(id, "approved")}
+                               disabled={processingId === id || d.kycStatus === "approved"}
+                               className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-bold transition-all border ${
+                                 d.kycStatus === "approved"
+                                   ? "bg-emerald-100/50 text-emerald-800 border-transparent cursor-not-allowed"
+                                   : "bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                               }`}
+                             >
+                               <ShieldCheck className="h-3.5 w-3.5" />
+                               Approve
+                             </button>
+                             <button
+                               onClick={() => handleDeleteDealerClick(id)}
+                               className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-all"
+                               title="Delete Dealer"
+                             >
+                               <Trash2 className="h-3.5 w-3.5" />
+                             </button>
                           </div>
                         </td>
                       </tr>
@@ -320,7 +345,7 @@ export default function AdminDealersPage() {
                       <span className="text-xs text-slate-500 font-medium">Verification Action</span>
                       <div className="flex items-center gap-2 mt-1.5">
                         <button
-                          onClick={() => handleUpdateKYC(selectedDealer._id, "approved")}
+                          onClick={() => handleUpdateKYCClick(selectedDealer._id, "approved")}
                           disabled={processingId === selectedDealer._id || selectedDealer.kycStatus === "approved"}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase border transition ${
                             selectedDealer.kycStatus === "approved"
@@ -331,7 +356,7 @@ export default function AdminDealersPage() {
                           Approve KYC
                         </button>
                         <button
-                          onClick={() => handleUpdateKYC(selectedDealer._id, "rejected")}
+                          onClick={() => handleUpdateKYCClick(selectedDealer._id, "rejected")}
                           disabled={processingId === selectedDealer._id || selectedDealer.kycStatus === "rejected"}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase border transition ${
                             selectedDealer.kycStatus === "rejected"
@@ -348,7 +373,7 @@ export default function AdminDealersPage() {
                       <span className="text-xs text-slate-500 font-medium">Danger Zone</span>
                       <div className="mt-1.5">
                         <button
-                          onClick={() => handleDeleteDealer(selectedDealer._id)}
+                          onClick={() => handleDeleteDealerClick(selectedDealer._id)}
                           className="w-full px-4 py-1.5 rounded-lg text-xs font-bold uppercase border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition-all flex items-center justify-center gap-1.5"
                         >
                           <Trash2 className="w-3.5 h-3.5" /> Delete Account
@@ -440,6 +465,15 @@ export default function AdminDealersPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        isDanger={confirmDialog.isDanger}
+      />
     </div>
   );
 }

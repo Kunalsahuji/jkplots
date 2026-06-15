@@ -2,12 +2,20 @@ import { useEffect, useState } from "react";
 import { Users, Search, Loader2, Calendar, ShieldAlert, X, Home, Phone, Mail, UserCheck, Shield, Eye, Trash2, Heart } from "lucide-react";
 import api from "@/utils/api";
 import { toast } from "sonner";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   // Selected User Drawer details state
   const [selectedUser, setSelectedUser] = useState(null);
@@ -25,8 +33,16 @@ export default function AdminUsersPage() {
   const [newUserPassword, setNewUserPassword] = useState("");
   const [creatingUser, setCreatingUser] = useState(false);
 
+  const handleDeleteUserClick = (userId) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete User Account",
+      message: "Are you sure you want to delete this user? All listed properties and callback enquiries will be permanently deleted.",
+      onConfirm: () => handleDeleteUser(userId)
+    });
+  };
+
   const handleDeleteUser = async (userId) => {
-    if (!window.confirm("Are you sure you want to delete this user? All listed properties and callback enquiries will be permanently deleted.")) return;
     try {
       const { data } = await api.delete(`/users/${userId}`);
       if (data.success) {
@@ -310,7 +326,7 @@ export default function AdminUsersPage() {
                             <Eye className="h-3.5 w-3.5" /> View Profile
                           </button>
                           <button
-                            onClick={() => handleDeleteUser(u._id)}
+                            onClick={() => handleDeleteUserClick(u._id)}
                             className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-all"
                             title="Delete User"
                           >
@@ -411,7 +427,7 @@ export default function AdminUsersPage() {
                       <span className="text-xs text-slate-500 font-medium">Danger Zone</span>
                       <div className="mt-1.5">
                         <button
-                          onClick={() => handleDeleteUser(selectedUser._id)}
+                          onClick={() => handleDeleteUserClick(selectedUser._id)}
                           className="w-full px-4 py-1.5 rounded-lg text-xs font-bold uppercase border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition-all flex items-center justify-center gap-1.5"
                         >
                           <Trash2 className="w-3.5 h-3.5" /> Delete Account
@@ -610,6 +626,14 @@ export default function AdminUsersPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+      />
     </div>
   );
 }

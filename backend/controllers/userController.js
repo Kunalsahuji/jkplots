@@ -153,6 +153,8 @@ exports.getUsers = asyncHandler(async (req, res, next) => {
         email: u.email,
         role: u.role || 'user',
         kycStatus: u.kycStatus,
+        panNumber: u.panNumber,
+        panName: u.panName,
         isActive: u.isActive !== false,
         createdAt: u.createdAt
     }));
@@ -341,6 +343,8 @@ exports.adminUpdateUser = asyncHandler(async (req, res, next) => {
             email: user.email,
             role: user.role,
             kycStatus: isAdmin ? 'approved' : user.kycStatus,
+            panNumber: user.panNumber,
+            panName: user.panName,
             isActive: user.isActive !== false,
             createdAt: user.createdAt
         }
