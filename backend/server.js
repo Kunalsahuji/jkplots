@@ -112,6 +112,9 @@ const enquiryRoutes = require('./routes/enquiryRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const adminRoutes = require('./routes/adminRoutes'); 
 const promotionRoutes = require('./routes/promotionRoutes');
+const cityRoutes = require('./routes/cityRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+const legalRoutes = require('./routes/legalRoutes');
 
 app.use('/api/properties', propertyRoutes);
 app.use('/api/users', userRoutes);
@@ -119,6 +122,9 @@ app.use('/api/enquiries', enquiryRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/promotions', promotionRoutes);
+app.use('/api/cities', cityRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/legal', legalRoutes);
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

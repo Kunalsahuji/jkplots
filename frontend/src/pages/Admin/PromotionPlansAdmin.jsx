@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Plus, Trash2, Edit, Loader2 } from "lucide-react";
 import api from "@/utils/api";
 import { toast } from "sonner";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 export default function PromotionPlansAdmin() {
   const [plans, setPlans] = useState([]);
@@ -14,6 +15,13 @@ export default function PromotionPlansAdmin() {
   });
   const [editingId, setEditingId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {}
+  });
 
   useEffect(() => {
     fetchPlans();
@@ -82,8 +90,16 @@ export default function PromotionPlansAdmin() {
     });
   };
 
+  const handleDeleteClick = (id) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete Promotion Plan",
+      message: "Are you sure you want to permanently delete this promotion plan?",
+      onConfirm: () => handleDelete(id)
+    });
+  };
+
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this plan?")) return;
     try {
       await api.delete(`/promotions/admin/plans/${id}`);
       toast.success("Plan deleted");
@@ -203,7 +219,7 @@ export default function PromotionPlansAdmin() {
                       <button onClick={() => handleEdit(plan)} className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-md">
                         <Edit size={16} />
                       </button>
-                      <button onClick={() => handleDelete(plan._id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md">
+                      <button onClick={() => handleDeleteClick(plan._id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md">
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -222,6 +238,14 @@ export default function PromotionPlansAdmin() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+      />
     </div>
   );
 }

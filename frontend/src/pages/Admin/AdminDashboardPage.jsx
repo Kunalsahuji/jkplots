@@ -23,6 +23,7 @@ import api from "@/utils/api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
 
 const formatPrice = (val) => {
   if (!val) return "₹—";
@@ -130,6 +131,36 @@ export default function AdminDashboardPage() {
     }
   };
 
+  // Property Purpose Data
+  const getPropertyPurposeData = () => {
+    const counts = { Buy: 0, Rent: 0, Commercial: 0 };
+    properties.forEach(p => {
+      if (p.purpose === "Buy") counts.Buy += 1;
+      else if (p.purpose === "Rent") counts.Rent += 1;
+      else if (p.purpose === "Commercial" || p.purpose === "Commercial-Rent" || p.purpose === "Commercial-Buy") counts.Commercial += 1;
+    });
+    return [
+      { name: "Buy", value: counts.Buy, color: "#10b981" },
+      { name: "Rent", value: counts.Rent, color: "#3b82f6" },
+      { name: "Commercial", value: counts.Commercial, color: "#f59e0b" }
+    ];
+  };
+
+  // User Roles Data
+  const getUserRolesData = () => {
+    const counts = { user: 0, dealer: 0, admin: 0 };
+    users.forEach(u => {
+      if (u.role === "admin" || u.role === "superadmin") counts.admin += 1;
+      else if (u.role === "dealer") counts.dealer += 1;
+      else counts.user += 1;
+    });
+    return [
+      { name: "Standard Users", count: counts.user, color: "#3b82f6" },
+      { name: "Real Estate Dealers", count: counts.dealer, color: "#8b5cf6" },
+      { name: "Administrators", count: counts.admin, color: "#ec4899" }
+    ];
+  };
+
   // Pagination slicing
   const propertiesTotalPages = Math.ceil(properties.length / itemsPerPage);
   const propertiesEnd = propertiesPage * itemsPerPage;
@@ -232,6 +263,75 @@ export default function AdminDashboardPage() {
             <div className="font-display text-xl font-bold text-white group-hover:text-purple-400 transition-colors">Configure Plans</div>
             <div className="text-xs text-gray-500">Customize promo packages</div>
           </Link>
+        </div>
+
+        {/* Visual Analytics & Auditing */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Chart 1: Property Purpose Distribution */}
+          <div className="rounded-2xl border border-white/10 bg-[#121214] p-6 space-y-6">
+            <div>
+              <h3 className="font-semibold text-base text-white">Property Purpose Distribution</h3>
+              <p className="text-xs text-gray-400 mt-1">Audit listing segments (Buy, Rent, and Commercial properties)</p>
+            </div>
+            <div className="h-64 flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={getPropertyPurposeData()}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {getPropertyPurposeData().map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "#1c1c1e", borderColor: "#2c2c2e", borderRadius: "8px" }}
+                    itemStyle={{ color: "#fff" }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex flex-col gap-2 justify-center pl-4 border-l border-white/5 min-w-[120px]">
+                {getPropertyPurposeData().map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                    <span className="text-xs font-medium text-gray-300">{item.name}:</span>
+                    <span className="text-xs font-bold text-white">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Chart 2: User Role Registry */}
+          <div className="rounded-2xl border border-white/10 bg-[#121214] p-6 space-y-6">
+            <div>
+              <h3 className="font-semibold text-base text-white">Registered User Roles</h3>
+              <p className="text-xs text-gray-400 mt-1">Audit system user registry segments</p>
+            </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={getUserRolesData()}>
+                  <XAxis dataKey="name" stroke="#71717a" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#71717a" fontSize={11} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "#1c1c1e", borderColor: "#2c2c2e", borderRadius: "8px" }}
+                    itemStyle={{ color: "#fff" }}
+                    cursor={{ fill: "rgba(255,255,255,0.05)" }}
+                  />
+                  <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                    {getUserRolesData().map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
 
         {/* Tabs */}

@@ -95,6 +95,21 @@ export default function EditPropertyPage() {
   const [district, setDistrict] = useState("Srinagar");
   const [city, setCity] = useState("Srinagar");
   const [locality, setLocality] = useState("");
+  const [dbCities, setDbCities] = useState([]);
+
+  useEffect(() => {
+    const fetchDbCities = async () => {
+      try {
+        const { data } = await api.get("/cities");
+        if (data.success && data.data.length > 0) {
+          setDbCities(data.data);
+        }
+      } catch (err) {
+        console.error("Failed to load cities from DB", err);
+      }
+    };
+    fetchDbCities();
+  }, []);
 
   // Property info states
   const [bedrooms, setBedrooms] = useState("");
@@ -664,9 +679,13 @@ export default function EditPropertyPage() {
                   onChange={(e) => setCity(e.target.value)}
                   className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm focus:border-primary outline-none"
                 >
-                  {getCitiesForDistrict(district).map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
+                  {dbCities.length > 0 ? (
+                    dbCities.map((c) => (
+                      <option key={c._id || c.name} value={c.name}>{c.name}</option>
+                    ))
+                  ) : (
+                    <option value="Srinagar">Srinagar</option>
+                  )}
                 </select>
               </Field>
 

@@ -14,6 +14,9 @@ import {
   Menu,
   X,
   Star,
+  MapPin,
+  ThumbsUp,
+  FileText
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -34,11 +37,14 @@ const MENU_GROUPS = [
       { icon: Home, label: "Property Management", path: "/admin/properties" },
       { icon: MessageSquare, label: "Enquiries", path: "/admin/enquiries" },
       { icon: Star, label: "Promotion Plans", path: "/admin/promotions" },
+      { icon: MapPin, label: "Cities Management", path: "/admin/cities" },
+      { icon: ThumbsUp, label: "Reviews & Feedbacks", path: "/admin/reviews" },
     ],
   },
   {
     title: "SYSTEM",
     items: [
+      { icon: FileText, label: "Legal Pages CMS", path: "/admin/legal" },
       { icon: Settings, label: "Settings", path: "/admin/settings" },
     ],
   },
