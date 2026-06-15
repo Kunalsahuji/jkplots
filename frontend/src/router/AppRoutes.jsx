@@ -3,25 +3,33 @@ import { Header, MobileTabBar } from '@/components/site/Header';
 import { Footer } from '@/components/site/Footer';
 import { Toaster } from '@/components/ui/sonner';
 import { useAuth } from '@/context/AuthContext';
+import { lazy, Suspense } from 'react';
 
-// Page imports
-import HomePage from '@/pages/Home/HomePage';
-import ExplorePage from '@/pages/Explore/ExplorePage';
-import PropertyListPage from '@/pages/Properties/PropertyListPage';
-import PropertyDetailPage from '@/pages/Properties/PropertyDetailPage';
-import PostPropertyPage from '@/pages/Properties/PostPropertyPage';
-import UserDashboard from '@/pages/Dashboard/UserDashboard';
-import AuthPage from '@/pages/Auth/AuthPage';
-import SavedPage from '@/pages/Saved/SavedPage';
-import AdminLogin from '@/pages/Admin/AdminLogin';
-import AdminLayout from '@/pages/Admin/AdminLayout';
-import AdminDashboard from '@/pages/Admin/AdminDashboard';
-import PromotionPlansAdmin from '@/pages/Admin/PromotionPlansAdmin';
-import EditPropertyPage from '@/pages/Properties/EditPropertyPage';
-import AboutPage from '@/pages/Static/AboutPage';
-import ContactPage from '@/pages/Static/ContactPage';
-import PrivacyPage from '@/pages/Static/PrivacyPage';
-import TermsPage from '@/pages/Static/TermsPage';
+// Skeletons
+import { 
+  PropertyGridSkeleton, 
+  PropertyDetailSkeleton, 
+  DashboardSkeleton 
+} from '@/components/site/Skeletons';
+
+// Page imports using React.lazy
+const HomePage = lazy(() => import('@/pages/Home/HomePage'));
+const ExplorePage = lazy(() => import('@/pages/Explore/ExplorePage'));
+const PropertyListPage = lazy(() => import('@/pages/Properties/PropertyListPage'));
+const PropertyDetailPage = lazy(() => import('@/pages/Properties/PropertyDetailPage'));
+const PostPropertyPage = lazy(() => import('@/pages/Properties/PostPropertyPage'));
+const UserDashboard = lazy(() => import('@/pages/Dashboard/UserDashboard'));
+const AuthPage = lazy(() => import('@/pages/Auth/AuthPage'));
+const SavedPage = lazy(() => import('@/pages/Saved/SavedPage'));
+const AdminLogin = lazy(() => import('@/pages/Admin/AdminLogin'));
+const AdminLayout = lazy(() => import('@/pages/Admin/AdminLayout'));
+const AdminDashboard = lazy(() => import('@/pages/Admin/AdminDashboard'));
+const PromotionPlansAdmin = lazy(() => import('@/pages/Admin/PromotionPlansAdmin'));
+const EditPropertyPage = lazy(() => import('@/pages/Properties/EditPropertyPage'));
+const AboutPage = lazy(() => import('@/pages/Static/AboutPage'));
+const ContactPage = lazy(() => import('@/pages/Static/ContactPage'));
+const PrivacyPage = lazy(() => import('@/pages/Static/PrivacyPage'));
+const TermsPage = lazy(() => import('@/pages/Static/TermsPage'));
 
 // ─── Skeleton loader shown while session check is in-flight ───────────────────
 function PageSkeleton() {
@@ -115,54 +123,112 @@ export default function AppRoutes() {
         <Routes>
             <Route element={<AppLayout />}>
                 {/* Public */}
-                <Route path="/" element={<HomePage />} />
-                <Route path="/properties" element={<PropertyListPage />} />
-                <Route path="/properties/:id" element={<PropertyDetailPage />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/contact" element={<ContactPage />} />
-                <Route path="/privacy" element={<PrivacyPage />} />
-                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/" element={
+                    <Suspense fallback={<PageSkeleton />}><HomePage /></Suspense>
+                } />
+                <Route path="/properties" element={
+                    <Suspense fallback={
+                        <div className="container-px mx-auto max-w-7xl py-12 space-y-6">
+                            <div className="h-8 w-48 rounded bg-muted animate-pulse" />
+                            <PropertyGridSkeleton count={8} />
+                        </div>
+                    }>
+                        <PropertyListPage />
+                    </Suspense>
+                } />
+                <Route path="/properties/:id" element={
+                    <Suspense fallback={<PropertyDetailSkeleton />}><PropertyDetailPage /></Suspense>
+                } />
+                <Route path="/about" element={
+                    <Suspense fallback={<PageSkeleton />}><AboutPage /></Suspense>
+                } />
+                <Route path="/contact" element={
+                    <Suspense fallback={<PageSkeleton />}><ContactPage /></Suspense>
+                } />
+                <Route path="/privacy" element={
+                    <Suspense fallback={<PageSkeleton />}><PrivacyPage /></Suspense>
+                } />
+                <Route path="/terms" element={
+                    <Suspense fallback={<PageSkeleton />}><TermsPage /></Suspense>
+                } />
 
                 {/* Protected — require login */}
-                <Route path="/explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
-                <Route path="/post-property" element={<ProtectedRoute><PostPropertyPage /></ProtectedRoute>} />
-                <Route path="/edit-property/:id" element={<ProtectedRoute><EditPropertyPage /></ProtectedRoute>} />
-                <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
-                <Route path="/dashboard/:tab" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
-                <Route path="/saved" element={<ProtectedRoute><SavedPage /></ProtectedRoute>} />
+                <Route path="/explore" element={
+                    <ProtectedRoute>
+                        <Suspense fallback={<PageSkeleton />}><ExplorePage /></Suspense>
+                    </ProtectedRoute>
+                } />
+                <Route path="/post-property" element={
+                    <ProtectedRoute>
+                        <Suspense fallback={<PageSkeleton />}><PostPropertyPage /></Suspense>
+                    </ProtectedRoute>
+                } />
+                <Route path="/edit-property/:id" element={
+                    <ProtectedRoute>
+                        <Suspense fallback={<PageSkeleton />}><EditPropertyPage /></Suspense>
+                    </ProtectedRoute>
+                } />
+                <Route path="/dashboard" element={
+                    <ProtectedRoute>
+                        <Suspense fallback={<DashboardSkeleton />}><UserDashboard /></Suspense>
+                    </ProtectedRoute>
+                } />
+                <Route path="/dashboard/:tab" element={
+                    <ProtectedRoute>
+                        <Suspense fallback={<DashboardSkeleton />}><UserDashboard /></Suspense>
+                    </ProtectedRoute>
+                } />
+                <Route path="/saved" element={
+                    <ProtectedRoute>
+                        <Suspense fallback={
+                            <div className="container-px mx-auto max-w-7xl py-12 space-y-6">
+                                <div className="h-8 w-48 rounded bg-muted animate-pulse" />
+                                <PropertyGridSkeleton count={4} />
+                            </div>
+                        }><SavedPage /></Suspense>
+                    </ProtectedRoute>
+                } />
             </Route>
 
             {/* Auth page — outside layout (full screen) */}
             <Route
                 path="/auth"
                 element={
-                    <>
+                    <Suspense fallback={<PageSkeleton />}>
                         <AuthPage />
                         <Toaster />
-                    </>
+                    </Suspense>
                 }
             />
 
             {/* Admin Portal — outside layout (full screen dark admin design) */}
             <Route path="/admin/login" element={
-                <>
+                <Suspense fallback={<PageSkeleton />}>
                     <AdminLogin />
                     <Toaster />
-                </>
+                </Suspense>
             } />
             
             <Route
                 path="/admin"
                 element={
                     <AdminProtectedRoute>
-                        <AdminLayout />
-                        <Toaster />
+                        <Suspense fallback={<PageSkeleton />}>
+                            <AdminLayout />
+                            <Toaster />
+                        </Suspense>
                     </AdminProtectedRoute>
                 }
             >
-                <Route index element={<AdminDashboard />} />
-                <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="promotions" element={<PromotionPlansAdmin />} />
+                <Route index element={
+                    <Suspense fallback={<PageSkeleton />}><AdminDashboard /></Suspense>
+                } />
+                <Route path="dashboard" element={
+                    <Suspense fallback={<PageSkeleton />}><AdminDashboard /></Suspense>
+                } />
+                <Route path="promotions" element={
+                    <Suspense fallback={<PageSkeleton />}><PromotionPlansAdmin /></Suspense>
+                } />
             </Route>
 
             <Route path="*" element={<NotFound />} />

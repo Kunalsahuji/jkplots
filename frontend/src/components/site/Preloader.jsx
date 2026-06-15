@@ -3,15 +3,29 @@ import { Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Preloader({ isLoading }) {
-  const [show, setShow] = useState(true);
+  const [show, setShow] = useState(() => {
+    const lastPreloader = localStorage.getItem('jkplot_last_preloader');
+    if (!lastPreloader) return true;
+
+    // Check if the preloader was shown within the last 30 minutes
+    const thirtyMinutes = 30 * 60 * 1000;
+    const now = Date.now();
+    if (now - parseInt(lastPreloader, 10) > thirtyMinutes) {
+      return true;
+    }
+    return false;
+  });
 
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && show) {
       // Delay fadeout slightly for a smooth, premium feel
-      const timer = setTimeout(() => setShow(false), 800);
+      const timer = setTimeout(() => {
+        setShow(false);
+        localStorage.setItem('jkplot_last_preloader', Date.now().toString());
+      }, 800);
       return () => clearTimeout(timer);
     }
-  }, [isLoading]);
+  }, [isLoading, show]);
 
   if (!show) return null;
 

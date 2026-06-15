@@ -6,6 +6,8 @@ import { SlidersHorizontal, LayoutGrid, List, X, ChevronLeft, ChevronRight } fro
 import { Button } from "@/components/ui/button";
 import { useProperties } from "@/hooks/useProperties";
 import { motion, AnimatePresence } from "framer-motion";
+import { useDebounce } from "@/hooks/useDebounce";
+import { PropertyCardSkeleton } from "@/components/site/Skeletons";
 
 const cityOpts = ["All", "Srinagar", "Jammu", "Gulmarg", "Pahalgam", "Anantnag", "Baramulla", "Udhampur"];
 const bedroomOpts = ["Any", "1+", "2+", "3+", "4+"];
@@ -73,6 +75,9 @@ export default function PropertyListPage() {
     };
   }, [filtersOpen]);
 
+  // Debounce the budget range slider value to avoid hitting backend API on every scroll step
+  const debouncedBudget = useDebounce(budget, 350);
+
   // Compute API query filters
   const apiParams = useMemo(() => {
     const params = { page, limit };
@@ -84,14 +89,14 @@ export default function PropertyListPage() {
     if (purpose !== "All") params.purpose = purpose;
     if (beds !== "Any") params.bedrooms = parseInt(beds);
     
-    // Budget limit
-    params["price[lte]"] = budget;
+    // Budget limit (debounced)
+    params["price[lte]"] = debouncedBudget;
 
     if (sort === "price-asc") params.sort = "price";
     if (sort === "price-desc") params.sort = "-price";
 
     return params;
-  }, [city, type, purpose, beds, budget, sort, searchParams, page]);
+  }, [city, type, purpose, beds, debouncedBudget, sort, searchParams, page]);
 
   // Query properties using React Query hook
   const { data: propertiesData, isLoading } = useProperties(apiParams);
@@ -226,16 +231,8 @@ export default function PropertyListPage() {
 
           {isLoading ? (
             <div className={view === "grid" ? "grid gap-5 sm:grid-cols-2 xl:grid-cols-3" : "space-y-5"}>
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="animate-pulse rounded-3xl border border-border bg-card p-4">
-                  <div className="aspect-[4/3] w-full rounded-2xl bg-secondary" />
-                  <div className="mt-4 h-6 w-2/3 rounded bg-secondary" />
-                  <div className="mt-2 h-4 w-1/3 rounded bg-secondary" />
-                  <div className="mt-4 flex gap-2">
-                    <div className="h-8 w-1/4 rounded-full bg-secondary" />
-                    <div className="h-8 w-1/4 rounded-full bg-secondary" />
-                  </div>
-                </div>
+              {Array.from({ length: limit }).map((_, i) => (
+                <PropertyCardSkeleton key={i} />
               ))}
             </div>
           ) : filtered.length === 0 ? (

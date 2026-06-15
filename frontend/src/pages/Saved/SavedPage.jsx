@@ -5,6 +5,7 @@ import { Heart, Inbox } from "lucide-react";
 import { Link } from "react-router-dom";
 import api from "@/utils/api";
 import { motion } from "framer-motion";
+import { PropertyGridSkeleton } from "@/components/site/Skeletons";
 
 export default function SavedPage() {
   const { user } = useAuth();
@@ -51,8 +52,8 @@ export default function SavedPage() {
       </motion.div>
 
       {loading ? (
-        <div className="mt-12 flex h-40 items-center justify-center text-sm text-muted-foreground animate-pulse">
-          Loading favorited listings...
+        <div className="mt-8">
+          <PropertyGridSkeleton count={4} />
         </div>
       ) : savedList.length === 0 ? (
         <motion.div
