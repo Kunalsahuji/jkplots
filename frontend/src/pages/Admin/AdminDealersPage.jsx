@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Search, Loader2, CheckCircle2, XCircle, AlertTriangle, ShieldCheck } from "lucide-react";
+import { Search, Loader2, CheckCircle2, XCircle, AlertTriangle, ShieldCheck, Eye, X, Home, Mail, Phone, Trash2 } from "lucide-react";
 import api from "@/utils/api";
 import { toast } from "sonner";
 
@@ -9,6 +9,12 @@ export default function AdminDealersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [processingId, setProcessingId] = useState(null);
+
+  // Detail Drawer state
+  const [selectedDealer, setSelectedDealer] = useState(null);
+  const [dealerProperties, setDealerProperties] = useState([]);
+  const [dealerEnquiries, setDealerEnquiries] = useState([]);
+  const [detailsLoading, setDetailsLoading] = useState(false);
 
   const fetchDealers = async () => {
     setLoading(true);
@@ -30,6 +36,54 @@ export default function AdminDealersPage() {
     fetchDealers();
   }, []);
 
+  const handleDeleteDealer = async (dealerId) => {
+    if (!window.confirm("Are you sure you want to delete this dealer? All listed properties and callback enquiries will be permanently deleted.")) return;
+    try {
+      const { data } = await api.delete(`/users/${dealerId}`);
+      if (data.success) {
+        toast.success(data.message || "Dealer deleted successfully!");
+        setDealers(prev => prev.filter(d => d._id !== dealerId));
+        if (selectedDealer?._id === dealerId) {
+          setSelectedDealer(null);
+        }
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete dealer.");
+    }
+  };
+
+  const handleOpenDetails = async (d) => {
+    setSelectedDealer(d);
+    setDetailsLoading(true);
+    setDealerProperties([]);
+    setDealerEnquiries([]);
+
+    try {
+      // 1. Fetch properties
+      const { data: propData } = await api.get("/properties");
+      if (propData.success) {
+        const matchingProps = propData.data.filter(
+          (p) => p.dealer === d._id || p.contactNumber === d.phone || p.dealerPhone === d.phone
+        );
+        setDealerProperties(matchingProps);
+      }
+
+      // 2. Fetch enquiries
+      const { data: enqData } = await api.get("/enquiries");
+      if (enqData.success) {
+        const matchingEnquiries = enqData.data.filter(
+          (e) => e.buyerPhone === d.phone || e.dealerPhone === d.phone
+        );
+        setDealerEnquiries(matchingEnquiries);
+      }
+    } catch (err) {
+      console.error("Failed to sync dealer details:", err);
+      toast.error("Failed to fetch connected portfolio details.");
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
+
   const handleUpdateKYC = async (id, status) => {
     const confirmMsg = `Are you sure you want to set this dealer's KYC status to ${status.toUpperCase()}?`;
     if (!window.confirm(confirmMsg)) return;
@@ -41,6 +95,7 @@ export default function AdminDealersPage() {
         setDealers((prev) =>
           prev.map((d) => (d.id === id || d._id === id ? { ...d, kycStatus: status } : d))
         );
+        setSelectedDealer((prev) => (prev?._id === id ? { ...prev, kycStatus: status } : prev));
         toast.success(`Dealer KYC status updated to ${status}!`);
       }
     } catch (err) {
@@ -63,7 +118,7 @@ export default function AdminDealersPage() {
   });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 relative">
       {/* Title */}
       <div>
         <h1 className="font-display text-3xl font-bold text-slate-900 tracking-tight">
@@ -171,6 +226,12 @@ export default function AdminDealersPage() {
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <button
+                              onClick={() => handleOpenDetails(d)}
+                              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-3 text-xs font-semibold transition-all shadow-sm"
+                            >
+                              <Eye className="h-3.5 w-3.5" /> Details
+                            </button>
+                            <button
                               onClick={() => handleUpdateKYC(id, "approved")}
                               disabled={processingId === id || d.kycStatus === "approved"}
                               className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-bold transition-all border ${
@@ -183,16 +244,11 @@ export default function AdminDealersPage() {
                               Approve
                             </button>
                             <button
-                              onClick={() => handleUpdateKYC(id, "rejected")}
-                              disabled={processingId === id || d.kycStatus === "rejected"}
-                              className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-bold transition-all border ${
-                                d.kycStatus === "rejected"
-                                  ? "bg-red-100/50 text-red-800 border-transparent cursor-not-allowed"
-                                  : "bg-white text-red-600 border-red-200 hover:bg-red-50"
-                              }`}
+                              onClick={() => handleDeleteDealer(id)}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-all"
+                              title="Delete Dealer"
                             >
-                              <XCircle className="h-3.5 w-3.5" />
-                              Reject
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </td>
@@ -202,6 +258,185 @@ export default function AdminDealersPage() {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Slide-over Dealer Drawer (Right Drawer) */}
+      {selectedDealer && (
+        <div className="fixed inset-0 z-50 overflow-hidden">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity" onClick={() => setSelectedDealer(null)} />
+          <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+            <div className="pointer-events-auto w-screen max-w-xl transform bg-white shadow-2xl transition-all flex flex-col h-full border-l border-slate-100">
+              
+              {/* Drawer Header */}
+              <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+                <h2 className="text-lg font-bold text-slate-950 font-display">Dealer Verification Detail</h2>
+                <button
+                  onClick={() => setSelectedDealer(null)}
+                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Drawer Body */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                
+                {/* Profile Info Card */}
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center gap-4">
+                  <div className="h-16 w-16 rounded-full bg-slate-200 text-slate-700 font-bold text-2xl flex items-center justify-center">
+                    {selectedDealer.name?.[0]?.toUpperCase() || "D"}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-lg leading-tight">{selectedDealer.name || "Unnamed"}</h3>
+                    <p className="text-sm font-mono text-slate-500 mt-1 flex items-center gap-1">
+                      <Phone className="h-3.5 w-3.5" /> +91 {selectedDealer.phone}
+                    </p>
+                  </div>
+                </div>
+
+                {/* PAN Vetting Details */}
+                <div className="space-y-4 border border-slate-150 p-4 rounded-2xl bg-white">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">KYC Document Vetting</h4>
+                  
+                  <div className="grid grid-cols-2 gap-4 py-2 border-b border-slate-50 text-xs">
+                    <div>
+                      <span className="text-slate-500 block font-medium">PAN Card Holder Name</span>
+                      <span className="font-bold text-slate-900 text-sm mt-1 block">
+                        {selectedDealer.panName || "N/A"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block font-medium">PAN Number</span>
+                      <span className="font-mono font-bold text-slate-900 text-sm mt-1 block">
+                        {selectedDealer.panNumber || "N/A"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-4 items-center justify-between pt-2">
+                    <div>
+                      <span className="text-xs text-slate-500 font-medium">Verification Action</span>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <button
+                          onClick={() => handleUpdateKYC(selectedDealer._id, "approved")}
+                          disabled={processingId === selectedDealer._id || selectedDealer.kycStatus === "approved"}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase border transition ${
+                            selectedDealer.kycStatus === "approved"
+                              ? "bg-emerald-50 text-emerald-700 border-transparent cursor-not-allowed"
+                              : "bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                          }`}
+                        >
+                          Approve KYC
+                        </button>
+                        <button
+                          onClick={() => handleUpdateKYC(selectedDealer._id, "rejected")}
+                          disabled={processingId === selectedDealer._id || selectedDealer.kycStatus === "rejected"}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase border transition ${
+                            selectedDealer.kycStatus === "rejected"
+                              ? "bg-red-50 text-red-700 border-transparent cursor-not-allowed"
+                              : "bg-white text-red-600 border-red-200 hover:bg-red-50"
+                          }`}
+                        >
+                          Reject KYC
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-xs text-slate-500 font-medium">Danger Zone</span>
+                      <div className="mt-1.5">
+                        <button
+                          onClick={() => handleDeleteDealer(selectedDealer._id)}
+                          className="w-full px-4 py-1.5 rounded-lg text-xs font-bold uppercase border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition-all flex items-center justify-center gap-1.5"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Delete Account
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Connections Data (Properties & Enquiries) */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider font-display">Inventory &amp; Received Leads</h4>
+
+                  {detailsLoading ? (
+                    <div className="flex flex-col items-center justify-center py-12 space-y-2 text-slate-400">
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                      <span className="text-xs">Fetching portfolio and leads...</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      
+                      {/* Properties */}
+                      <div className="space-y-3">
+                        <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                          <Home className="h-4 w-4 text-slate-400" />
+                          Listed Properties ({dealerProperties.length})
+                        </span>
+
+                        {dealerProperties.length === 0 ? (
+                          <p className="text-xs text-slate-400 bg-slate-50 p-4 rounded-xl text-center">
+                            No property listings found for this dealer.
+                          </p>
+                        ) : (
+                          <div className="grid gap-2 max-h-48 overflow-y-auto pr-1">
+                            {dealerProperties.map((p) => (
+                              <div key={p._id || p.id} className="p-3 bg-slate-50/50 rounded-xl border border-slate-100 flex justify-between items-center text-xs">
+                                <div className="flex flex-col min-w-0">
+                                  <span className="font-semibold text-slate-800 truncate">{p.title}</span>
+                                  <span className="text-[10px] text-slate-400 mt-0.5">{p.locality}, {p.city}</span>
+                                </div>
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${
+                                  p.verified ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
+                                }`}>
+                                  {p.verified ? "Verified" : "Pending"}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Enquiries */}
+                      <div className="space-y-3">
+                        <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                          <Mail className="h-4 w-4 text-slate-400" />
+                          Received Customer Leads ({dealerEnquiries.length})
+                        </span>
+
+                        {dealerEnquiries.length === 0 ? (
+                          <p className="text-xs text-slate-400 bg-slate-50 p-4 rounded-xl text-center">
+                            No callback logs found for this dealer.
+                          </p>
+                        ) : (
+                          <div className="grid gap-2 max-h-48 overflow-y-auto pr-1">
+                            {dealerEnquiries.map((e) => (
+                              <div key={e._id} className="p-3 bg-slate-50/50 rounded-xl border border-slate-100 text-xs space-y-1">
+                                <div className="flex justify-between items-center font-semibold text-slate-800">
+                                  <span>From: {e.buyerName}</span>
+                                  <span className={`text-[10px] rounded px-1.5 py-0.5 font-bold ${
+                                    e.status === "Closed" ? "bg-slate-100 text-slate-400" : "bg-amber-50 text-amber-700"
+                                  }`}>
+                                    {e.status || "Pending"}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-slate-500 italic">"{e.message}"</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+            </div>
           </div>
         </div>
       )}

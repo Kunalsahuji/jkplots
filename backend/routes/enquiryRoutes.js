@@ -4,7 +4,8 @@ const router = express.Router();
 const {
     createEnquiry,
     getEnquiries,
-    updateEnquiryStatus
+    updateEnquiryStatus,
+    deleteEnquiry
 } = require('../controllers/enquiryController');
 
 const { protect } = require('../middleware/auth');
@@ -14,5 +15,6 @@ router.use(protect); // All enquiry actions require login
 router.post('/', createEnquiry);
 router.get('/', getEnquiries);
 router.put('/:id', updateEnquiryStatus);
+router.delete('/:id', deleteEnquiry);
 
 module.exports = router;

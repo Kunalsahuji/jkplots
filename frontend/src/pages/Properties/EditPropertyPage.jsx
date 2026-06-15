@@ -164,8 +164,8 @@ export default function EditPropertyPage() {
         const { data } = await api.get(`/properties/${id}`);
         if (data.success) {
           const p = data.data;
-          // Verify ownership: must be the dealer who created it, or admin
-          if (p.dealerPhone !== user?.phone && user?.role !== "admin") {
+          // Verify ownership: must be the dealer who created it, or admin/superadmin
+          if (p.dealerPhone !== user?.phone && user?.role !== "admin" && user?.role !== "superadmin") {
             toast.error("You are not authorized to edit this listing.");
             navigate("/dashboard");
             return;
@@ -421,7 +421,7 @@ export default function EditPropertyPage() {
 
       if (data.success) {
         toast.success("Property updated successfully!");
-        navigate(user?.role === "admin" ? "/admin/dashboard" : "/dashboard");
+        navigate(user?.role === "admin" || user?.role === "superadmin" ? "/admin/properties" : "/dashboard");
       } else {
         toast.error(data.error || "Failed to update property.");
       }

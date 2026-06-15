@@ -139,11 +139,42 @@ exports.logout = asyncHandler(async (req, res, next) => {
 // ─── @route   GET /api/users
 // ─── @access  Private (Admin)
 exports.getUsers = asyncHandler(async (req, res, next) => {
-    const users = await User.find({}).sort('-createdAt');
+    const Admin = require('../models/Admin');
+    const [users, admins] = await Promise.all([
+        User.find({}).sort('-createdAt'),
+        Admin.find({}).sort('-createdAt')
+    ]);
+
+    const sanitizedUsers = users.map(u => ({
+        id: u._id,
+        _id: u._id,
+        name: u.name,
+        phone: u.phone,
+        email: u.email,
+        role: u.role || 'user',
+        kycStatus: u.kycStatus,
+        isActive: u.isActive !== false,
+        createdAt: u.createdAt
+    }));
+
+    const sanitizedAdmins = admins.map(a => ({
+        id: a._id,
+        _id: a._id,
+        name: a.name,
+        phone: a.phone,
+        email: a.email,
+        role: a.role || 'admin',
+        kycStatus: 'approved',
+        isActive: a.isActive !== false,
+        createdAt: a.createdAt
+    }));
+
+    const combined = [...sanitizedAdmins, ...sanitizedUsers];
+
     res.status(200).json({
         success: true,
-        count: users.length,
-        data: users.map(sanitizeUser),
+        count: combined.length,
+        data: combined,
     });
 });
 
@@ -272,10 +303,17 @@ exports.verifyKYCOTP = asyncHandler(async (req, res, next) => {
 // @access  Private (Admin/Superadmin)
 exports.adminUpdateUser = asyncHandler(async (req, res, next) => {
     const { role, kycStatus, isActive } = req.body;
+    const Admin = require('../models/Admin');
 
     let user = await User.findById(req.params.id);
+    let isAdmin = false;
+
     if (!user) {
-        return next(new ErrorResponse('User not found', 404));
+        user = await Admin.findById(req.params.id);
+        if (!user) {
+            return next(new ErrorResponse('User/Admin not found', 404));
+        }
+        isAdmin = true;
     }
 
     if (role !== undefined) user.role = role;
@@ -295,6 +333,143 @@ exports.adminUpdateUser = asyncHandler(async (req, res, next) => {
     res.status(200).json({
         success: true,
         message: 'User updated successfully',
-        data: sanitizeUser(user)
+        data: {
+            id: user._id,
+            _id: user._id,
+            name: user.name,
+            phone: user.phone,
+            email: user.email,
+            role: user.role,
+            kycStatus: isAdmin ? 'approved' : user.kycStatus,
+            isActive: user.isActive !== false,
+            createdAt: user.createdAt
+        }
+    });
+});
+
+// ─── @desc    Create new user, dealer, or admin (Admin only) ──────────────────
+// ─── @route   POST /api/users
+// ─── @access  Private (Admin)
+exports.createUser = asyncHandler(async (req, res, next) => {
+    const { name, email, phone, role, password } = req.body;
+    const Admin = require('../models/Admin');
+
+    if (!name || !phone) {
+        return next(new ErrorResponse('Please provide a name and phone number', 400));
+    }
+
+    const formattedPhone = `+91${phone.replace(/\D/g, '').slice(-10)}`;
+
+    if (role === 'admin' || role === 'superadmin') {
+        if (!email || !password) {
+            return next(new ErrorResponse('Please provide email and password for admin accounts', 400));
+        }
+
+        const existingAdmin = await Admin.findOne({ $or: [{ email }, { phone: formattedPhone }] });
+        if (existingAdmin) {
+            return next(new ErrorResponse('An admin with this email or phone already exists', 400));
+        }
+
+        const bcrypt = require('bcryptjs');
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const newAdmin = await Admin.create({
+            name,
+            email,
+            phone: formattedPhone,
+            role: role || 'admin',
+            password: hashedPassword
+        });
+
+        return res.status(201).json({
+            success: true,
+            message: 'Admin account created successfully',
+            data: {
+                id: newAdmin._id,
+                _id: newAdmin._id,
+                name: newAdmin.name,
+                phone: newAdmin.phone,
+                email: newAdmin.email,
+                role: newAdmin.role,
+                kycStatus: 'approved',
+                isActive: true,
+                createdAt: newAdmin.createdAt
+            }
+        });
+    } else {
+        const existingUser = await User.findOne({ phone: formattedPhone });
+        if (existingUser) {
+            return next(new ErrorResponse('A user with this phone number already exists', 400));
+        }
+
+        const newUser = await User.create({
+            name,
+            phone: formattedPhone,
+            role: role || 'user',
+            email: email || undefined,
+            kycStatus: role === 'dealer' ? 'pending' : 'unverified'
+        });
+
+        return res.status(201).json({
+            success: true,
+            message: 'User account created successfully',
+            data: {
+                id: newUser._id,
+                _id: newUser._id,
+                name: newUser.name,
+                phone: newUser.phone,
+                email: newUser.email,
+                role: newUser.role,
+                kycStatus: newUser.kycStatus,
+                isActive: true,
+                createdAt: newUser.createdAt
+            }
+        });
+    }
+});
+
+// ─── @desc    Delete user or admin (Admin only) ──────────────────────────────
+// ─── @route   DELETE /api/users/:id
+// ─── @access  Private (Admin)
+exports.deleteUser = asyncHandler(async (req, res, next) => {
+    const Admin = require('../models/Admin');
+    const Property = require('../models/Property');
+    const Enquiry = require('../models/Enquiry');
+
+    let user = await User.findById(req.params.id);
+    let isAdmin = false;
+
+    if (!user) {
+        user = await Admin.findById(req.params.id);
+        if (!user) {
+            return next(new ErrorResponse('User/Admin not found', 404));
+        }
+        isAdmin = true;
+    }
+
+    // Prevent deleting oneself
+    if (user._id.toString() === req.user.id.toString()) {
+        return next(new ErrorResponse('You cannot delete your own account', 400));
+    }
+
+    if (isAdmin) {
+        await Admin.findByIdAndDelete(req.params.id);
+    } else {
+        // Delete all properties posted by this dealer
+        await Property.deleteMany({ dealer: user._id });
+        // Delete all enquiries buyer sent or dealer received
+        await Enquiry.deleteMany({
+            $or: [
+                { buyer: user._id },
+                { dealer: user._id }
+            ]
+        });
+        await User.findByIdAndDelete(req.params.id);
+    }
+
+    res.status(200).json({
+        success: true,
+        message: 'Account and associated listings deleted successfully'
     });
 });

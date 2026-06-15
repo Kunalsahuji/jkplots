@@ -498,3 +498,47 @@ exports.incrementView = async (req, res, next) => {
         res.status(500).json({ success: false, error: err.message });
     }
 };
+
+// @desc    Admin toggle property verification status
+// @route   PUT /api/properties/:id/verify
+// @access  Private (Admin/Superadmin)
+exports.togglePropertyVerify = async (req, res, next) => {
+    try {
+        let property = await Property.findById(req.params.id);
+        if (!property) {
+            return next(new ErrorResponse(`Property not found`, 404));
+        }
+
+        property.verified = !property.verified;
+        await property.save({ validateBeforeSave: false });
+
+        res.status(200).json({
+            success: true,
+            data: property
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// @desc    Admin toggle property featured status
+// @route   PUT /api/properties/:id/feature
+// @access  Private (Admin/Superadmin)
+exports.togglePropertyFeature = async (req, res, next) => {
+    try {
+        let property = await Property.findById(req.params.id);
+        if (!property) {
+            return next(new ErrorResponse(`Property not found`, 404));
+        }
+
+        property.featured = !property.featured;
+        await property.save({ validateBeforeSave: false });
+
+        res.status(200).json({
+            success: true,
+            data: property
+        });
+    } catch (err) {
+        next(err);
+    }
+};

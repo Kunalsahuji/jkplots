@@ -240,6 +240,12 @@ export default function AppRoutes() {
                 <Route path="properties" element={
                     <Suspense fallback={<PageSkeleton />}><AdminPropertiesPage /></Suspense>
                 } />
+                <Route path="properties/create" element={
+                    <Suspense fallback={<PageSkeleton />}><PostPropertyPage /></Suspense>
+                } />
+                <Route path="properties/edit/:id" element={
+                    <Suspense fallback={<PageSkeleton />}><EditPropertyPage /></Suspense>
+                } />
                 <Route path="enquiries" element={
                     <Suspense fallback={<PageSkeleton />}><AdminEnquiriesPage /></Suspense>
                 } />

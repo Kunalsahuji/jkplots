@@ -1,6 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const { getProperties, createProperty, getProperty, updateProperty, deleteProperty, addPropertyReview, updatePropertyReview, deletePropertyReview, incrementView } = require('../controllers/propertyController');
+const { 
+    getProperties, 
+    createProperty, 
+    getProperty, 
+    updateProperty, 
+    deleteProperty, 
+    addPropertyReview, 
+    updatePropertyReview, 
+    deletePropertyReview, 
+    incrementView,
+    togglePropertyVerify,
+    togglePropertyFeature
+} = require('../controllers/propertyController');
 const { protect, authorize } = require('../middleware/auth');
 const { propertyValidation } = require('../middleware/propertyValidation');
 const validate = require('../utils/validate');
@@ -13,6 +25,9 @@ router.route('/:id')
     .get(getProperty)
     .put(protect, authorize('dealer', 'admin'), propertyValidation, validate, updateProperty)
     .delete(protect, authorize('dealer', 'admin'), deleteProperty);
+
+router.put('/:id/verify', protect, authorize('admin'), togglePropertyVerify);
+router.put('/:id/feature', protect, authorize('admin'), togglePropertyFeature);
 
 router.route('/:id/reviews')
     .post(protect, addPropertyReview);

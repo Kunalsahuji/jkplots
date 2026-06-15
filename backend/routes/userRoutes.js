@@ -11,7 +11,9 @@ const {
     updateProfile,
     initiateKYC,
     verifyKYCOTP,
-    adminUpdateUser
+    adminUpdateUser,
+    createUser,
+    deleteUser
 } = require('../controllers/userController');
 
 const { protect, authorize } = require('../middleware/auth');
@@ -27,7 +29,9 @@ router.get('/me', protect, getMe);
 router.put('/me', protect, updateProfile);
 router.post('/logout', protect, logout);
 router.get('/', protect, authorize('admin'), getUsers);
+router.post('/', protect, authorize('admin'), createUser);
 router.put('/:id', protect, authorize('admin'), adminUpdateUser);
+router.delete('/:id', protect, authorize('admin'), deleteUser);
 router.post('/save-property/:propertyId', protect, toggleSaveProperty);
 
 router.post('/kyc/initiate', protect, initiateKYC);

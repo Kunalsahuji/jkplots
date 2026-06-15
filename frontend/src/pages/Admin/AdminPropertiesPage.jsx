@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Home, Search, Loader2, CheckCircle2, Star, Pencil, Trash2, SlidersHorizontal } from "lucide-react";
+import { Home, Search, Loader2, CheckCircle2, Star, Pencil, Trash2, SlidersHorizontal, Eye, X, Mail, Phone, Video } from "lucide-react";
 import api from "@/utils/api";
 import { toast } from "sonner";
 
@@ -21,6 +21,11 @@ export default function AdminPropertiesPage() {
   const [featuredFilter, setFeaturedFilter] = useState("all");
   const [actionLoadingId, setActionLoadingId] = useState(null);
 
+  // Property Details Drawer state
+  const [selectedProperty, setSelectedProperty] = useState(null);
+  const [propertyEnquiries, setPropertyEnquiries] = useState([]);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+
   const fetchProperties = async () => {
     setLoading(true);
     try {
@@ -40,6 +45,28 @@ export default function AdminPropertiesPage() {
     fetchProperties();
   }, []);
 
+  const handleOpenDetails = async (prop) => {
+    setSelectedProperty(prop);
+    setDetailsLoading(true);
+    setPropertyEnquiries([]);
+
+    try {
+      const { data } = await api.get("/enquiries");
+      if (data.success) {
+        // Match either by property ID or exact title
+        const matchingEnquiries = data.data.filter(
+          (e) => e.property === prop._id || e.propertyTitle === prop.title
+        );
+        setPropertyEnquiries(matchingEnquiries);
+      }
+    } catch (err) {
+      console.error("Failed to sync property enquiries:", err);
+      toast.error("Failed to sync leads for this property.");
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
+
   const handleDeleteProperty = async (id) => {
     if (!window.confirm("Are you sure you want to delete this property listing?")) return;
     setActionLoadingId(id);
@@ -47,6 +74,9 @@ export default function AdminPropertiesPage() {
       const { data } = await api.delete(`/properties/${id}`);
       if (data.success) {
         setProperties((prev) => prev.filter((p) => p._id !== id));
+        if (selectedProperty?._id === id) {
+          setSelectedProperty(null);
+        }
         toast.success("Listing deleted successfully!");
       }
     } catch (err) {
@@ -60,12 +90,10 @@ export default function AdminPropertiesPage() {
     setActionLoadingId(prop._id);
     try {
       const updatedVerified = !prop.verified;
-      const { data } = await api.put(`/properties/${prop._id}`, {
-        ...prop,
-        verified: updatedVerified
-      });
+      const { data } = await api.put(`/properties/${prop._id}/verify`);
       if (data.success) {
         setProperties(prev => prev.map(p => p._id === prop._id ? { ...p, verified: updatedVerified } : p));
+        setSelectedProperty(prev => (prev?._id === prop._id ? { ...prev, verified: updatedVerified } : prev));
         toast.success(`Property ${updatedVerified ? "Verified" : "Unverified"} successfully!`);
       }
     } catch (err) {
@@ -79,12 +107,10 @@ export default function AdminPropertiesPage() {
     setActionLoadingId(prop._id);
     try {
       const updatedFeatured = !prop.featured;
-      const { data } = await api.put(`/properties/${prop._id}`, {
-        ...prop,
-        featured: updatedFeatured
-      });
+      const { data } = await api.put(`/properties/${prop._id}/feature`);
       if (data.success) {
         setProperties(prev => prev.map(p => p._id === prop._id ? { ...p, featured: updatedFeatured } : p));
+        setSelectedProperty(prev => (prev?._id === prop._id ? { ...prev, featured: updatedFeatured } : prev));
         toast.success(`Property set as ${updatedFeatured ? "Featured" : "Regular"}!`);
       }
     } catch (err) {
@@ -117,7 +143,7 @@ export default function AdminPropertiesPage() {
   });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 relative">
       {/* Title */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -129,7 +155,7 @@ export default function AdminPropertiesPage() {
           </p>
         </div>
         <Link
-          to="/post-property"
+          to="/admin/properties/create"
           className="inline-flex items-center gap-2 rounded-xl bg-slate-900 hover:bg-black text-white px-5 py-2.5 text-sm font-semibold shadow-md transition-all"
         >
           <Home className="h-4 w-4" /> Add Listing
@@ -239,6 +265,12 @@ export default function AdminPropertiesPage() {
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <button
+                              onClick={() => handleOpenDetails(p)}
+                              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-3 text-xs font-semibold transition-all shadow-sm"
+                            >
+                              <Eye className="h-3.5 w-3.5" /> Details
+                            </button>
+                            <button
                               onClick={() => toggleVerifyProperty(p)}
                               disabled={actionLoadingId === id}
                               className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-bold transition-all border ${
@@ -263,7 +295,7 @@ export default function AdminPropertiesPage() {
                               {p.featured ? "Featured" : "Feature"}
                             </button>
                             <Link
-                              to={`/edit-property/${id}`}
+                              to={`/admin/properties/edit/${id}`}
                               className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all"
                               title="Edit Listing"
                             >
@@ -285,6 +317,186 @@ export default function AdminPropertiesPage() {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Slide-over Property Drawer (Right Drawer) */}
+      {selectedProperty && (
+        <div className="fixed inset-0 z-50 overflow-hidden">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity" onClick={() => setSelectedProperty(null)} />
+          <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+            <div className="pointer-events-auto w-screen max-w-xl transform bg-white shadow-2xl transition-all flex flex-col h-full border-l border-slate-100">
+              
+              {/* Drawer Header */}
+              <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+                <h2 className="text-lg font-bold text-slate-950 font-display">Property Specifications</h2>
+                <button
+                  onClick={() => setSelectedProperty(null)}
+                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Drawer Body */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                
+                {/* Images Carousel / Preview */}
+                {selectedProperty.photos && selectedProperty.photos.length > 0 ? (
+                  <div className="relative rounded-2xl overflow-hidden aspect-video bg-slate-100 border border-slate-100">
+                    <img
+                      src={selectedProperty.photos[0]}
+                      alt={selectedProperty.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute bottom-3 right-3 bg-slate-900/75 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-1 rounded-lg">
+                      {selectedProperty.photos.length} Photos
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl aspect-video bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 text-xs font-semibold">
+                    No Images Loaded
+                  </div>
+                )}
+
+                {/* Brief & Price */}
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 leading-tight">{selectedProperty.title}</h3>
+                  <div className="mt-2 flex flex-wrap gap-2 items-center justify-between">
+                    <span className="text-2xl font-black text-slate-950">{formatPrice(selectedProperty.price)}</span>
+                    <span className="text-xs px-2.5 py-1 bg-slate-100 text-slate-700 font-bold uppercase rounded-lg">
+                      {selectedProperty.type} · For {selectedProperty.purpose}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-2 font-mono">{selectedProperty.locality}, {selectedProperty.city}</p>
+                </div>
+
+                {/* Quick Moderation Toggles */}
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-150 flex items-center justify-between gap-4">
+                  <div className="text-xs">
+                    <span className="font-bold text-slate-800 block">Status Actions</span>
+                    <span className="text-slate-400 mt-0.5 block">Toggle verification &amp; homepage highlights</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => toggleVerifyProperty(selectedProperty)}
+                      className={`h-8 px-3 rounded-lg text-xs font-bold border transition ${
+                        selectedProperty.verified
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      {selectedProperty.verified ? "Verified" : "Verify"}
+                    </button>
+                    <button
+                      onClick={() => toggleFeaturedProperty(selectedProperty)}
+                      className={`h-8 px-3 rounded-lg text-xs font-bold border transition ${
+                        selectedProperty.featured
+                          ? "bg-amber-50 text-amber-700 border-amber-200"
+                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      {selectedProperty.featured ? "Featured" : "Feature"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Detailed Specifications */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Specifications Grid</h4>
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100 text-xs">
+                      <span className="text-slate-400 block mb-0.5">Area Size</span>
+                      <span className="font-bold text-slate-800">{selectedProperty.area} sq.ft</span>
+                    </div>
+                    <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100 text-xs">
+                      <span className="text-slate-400 block mb-0.5">Bedrooms</span>
+                      <span className="font-bold text-slate-800">{selectedProperty.bedrooms || 0} BHK</span>
+                    </div>
+                    <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100 text-xs">
+                      <span className="text-slate-400 block mb-0.5">Bathrooms</span>
+                      <span className="font-bold text-slate-800">{selectedProperty.bathrooms || 0} Bath</span>
+                    </div>
+                    <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100 text-xs">
+                      <span className="text-slate-400 block mb-0.5">Parking</span>
+                      <span className="font-bold text-slate-800">{selectedProperty.parking || "None"}</span>
+                    </div>
+                    <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100 text-xs">
+                      <span className="text-slate-400 block mb-0.5">Furnishing</span>
+                      <span className="font-bold text-slate-800">{selectedProperty.furnishing || "Unfurnished"}</span>
+                    </div>
+                    <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100 text-xs">
+                      <span className="text-slate-400 block mb-0.5">Balconies</span>
+                      <span className="font-bold text-slate-800">{selectedProperty.balconies || 0} Balc.</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Listing Description</h4>
+                  <p className="text-xs text-slate-600 leading-relaxed bg-slate-50/20 p-3 rounded-xl border border-slate-100">
+                    {selectedProperty.description || "No description provided."}
+                  </p>
+                </div>
+
+                {/* Contact info */}
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Dealer Contact Information</h4>
+                  <div className="flex flex-col gap-1 text-xs">
+                    <span className="text-slate-700 font-medium flex items-center gap-1.5">
+                      <Phone className="h-3.5 w-3.5 text-slate-400" /> +91 {selectedProperty.contactNumber || selectedProperty.dealerPhone || "N/A"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Video Tour */}
+                {selectedProperty.video && (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cinematic Video Tour</h4>
+                    <a
+                      href={selectedProperty.video}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 text-xs font-semibold text-slate-900 bg-slate-100 hover:bg-slate-200 px-4 py-2.5 rounded-xl border border-slate-200 transition"
+                    >
+                      <Video className="h-4 w-4 text-red-500" /> Watch Property Walkthrough Video
+                    </a>
+                  </div>
+                )}
+
+                {/* Leads Table */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Callback Leads for this Property ({propertyEnquiries.length})</h4>
+                  {detailsLoading ? (
+                    <div className="flex items-center justify-center py-6 text-slate-400 text-xs">
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" /> Syncing enquiries...
+                    </div>
+                  ) : propertyEnquiries.length === 0 ? (
+                    <p className="text-xs text-slate-400 bg-slate-50 p-4 rounded-xl text-center">
+                      No callback enquiries submitted yet for this listing.
+                    </p>
+                  ) : (
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {propertyEnquiries.map((e) => (
+                        <div key={e._id} className="p-3 bg-slate-50/50 rounded-xl border border-slate-100 text-xs space-y-1">
+                          <div className="flex justify-between items-center font-semibold text-slate-800">
+                            <span>From: {e.buyerName} ({e.buyerPhone})</span>
+                            <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono">
+                              {e.status || "Pending"}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 italic">"{e.message}"</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+            </div>
           </div>
         </div>
       )}

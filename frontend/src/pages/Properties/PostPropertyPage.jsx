@@ -133,8 +133,8 @@ export default function PostPropertyPage() {
     if (!isLoading) {
       if (!isAuthenticated) {
         navigate("/auth?redirect=/post-property");
-      } else if (user?.role !== "dealer") {
-        toast.error("Only dealers can post properties.");
+      } else if (user?.role !== "dealer" && user?.role !== "admin" && user?.role !== "superadmin") {
+        toast.error("Only dealers and administrators can post properties.");
         navigate("/");
       }
     }
@@ -341,7 +341,7 @@ export default function PostPropertyPage() {
 
       if (data.success) {
         toast.success("Property listed successfully!");
-        navigate("/");
+        navigate(user?.role === "admin" || user?.role === "superadmin" ? "/admin/properties" : "/dashboard");
       } else {
         toast.error(data.error || "Failed to post property.");
       }

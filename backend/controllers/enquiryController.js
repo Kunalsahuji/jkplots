@@ -66,7 +66,7 @@ exports.createEnquiry = async (req, res, next) => {
 exports.getEnquiries = async (req, res, next) => {
     try {
         let query = {};
-        if (req.user.role === 'admin') {
+        if (req.user.role === 'admin' || req.user.role === 'superadmin') {
             query = {};
         } else if (req.user.role === 'dealer') {
             query = {
@@ -107,7 +107,7 @@ exports.updateEnquiryStatus = async (req, res, next) => {
             return next(new ErrorResponse('Enquiry not found', 404));
         }
 
-        if (enquiry.dealerPhone !== req.user.phone && req.user.role !== 'admin') {
+        if (enquiry.dealerPhone !== req.user.phone && req.user.role !== 'admin' && req.user.role !== 'superadmin') {
             return next(new ErrorResponse('Not authorized to update this enquiry', 401));
         }
 
@@ -117,6 +117,43 @@ exports.updateEnquiryStatus = async (req, res, next) => {
         res.status(200).json({
             success: true,
             data: enquiry
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// @desc    Delete enquiry
+// @route   DELETE /api/enquiries/:id
+// @access  Private (Dealer/Admin)
+exports.deleteEnquiry = async (req, res, next) => {
+    try {
+        const enquiry = await Enquiry.findById(req.params.id);
+        if (!enquiry) {
+            return next(new ErrorResponse('Enquiry not found', 404));
+        }
+
+        if (enquiry.dealerPhone !== req.user.phone && req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+            return next(new ErrorResponse('Not authorized to delete this enquiry', 401));
+        }
+
+        // Decrement enquiries count on the referenced property
+        if (enquiry.property) {
+            await Property.findByIdAndUpdate(enquiry.property, { $inc: { enquiriesCount: -1 } });
+        }
+
+        // Remove from buyer's enquiries list
+        if (enquiry.buyer) {
+            await User.findByIdAndUpdate(enquiry.buyer, {
+                $pull: { myEnquiries: enquiry._id }
+            });
+        }
+
+        await Enquiry.findByIdAndDelete(req.params.id);
+
+        res.status(200).json({
+            success: true,
+            message: 'Enquiry deleted successfully'
         });
     } catch (err) {
         next(err);

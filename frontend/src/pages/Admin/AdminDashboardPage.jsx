@@ -79,14 +79,8 @@ export default function AdminDashboardPage() {
 
   const toggleVerifyProperty = async (prop) => {
     try {
-      // Toggle verified status (simulate via updating description or local state since Mongoose schema doesn't have an active flag yet)
-      // If we want to simulate it, we can update local state, or if we want to toggle status we can send a PUT request.
-      // Let's do a PUT request to update the property
       const updatedVerified = !prop.verified;
-      const { data } = await api.put(`/properties/${prop._id}`, {
-        ...prop,
-        verified: updatedVerified
-      });
+      const { data } = await api.put(`/properties/${prop._id}/verify`);
       if (data.success) {
         setProperties(prev => prev.map(p => p._id === prop._id ? { ...p, verified: updatedVerified } : p));
         toast.success(`Property ${updatedVerified ? "Verified" : "Unverified"} successfully!`);
@@ -99,10 +93,7 @@ export default function AdminDashboardPage() {
   const toggleFeaturedProperty = async (prop) => {
     try {
       const updatedFeatured = !prop.featured;
-      const { data } = await api.put(`/properties/${prop._id}`, {
-        ...prop,
-        featured: updatedFeatured
-      });
+      const { data } = await api.put(`/properties/${prop._id}/feature`);
       if (data.success) {
         setProperties(prev => prev.map(p => p._id === prop._id ? { ...p, featured: updatedFeatured } : p));
         toast.success(`Property set as ${updatedFeatured ? "Featured" : "Regular"}!`);
@@ -273,7 +264,7 @@ export default function AdminDashboardPage() {
                                 {p.featured ? "Featured" : "Feature"}
                               </button>
                               <Link
-                                to={`/edit-property/${p._id}`}
+                                to={`/admin/properties/edit/${p._id}`}
                                 className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10 transition"
                                 title="Edit Listing"
                               >

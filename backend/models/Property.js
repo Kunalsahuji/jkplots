@@ -127,7 +127,22 @@ const PropertySchema = new mongoose.Schema({
         type: Date
     }
 }, {
-    timestamps: true
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
 });
+
+PropertySchema.virtual('featured')
+    .get(function() {
+        return this.isFeatured && (!this.featuredUntil || this.featuredUntil > Date.now());
+    })
+    .set(function(value) {
+        this.isFeatured = value;
+        if (value) {
+            this.featuredUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        } else {
+            this.featuredUntil = null;
+        }
+    });
 
 module.exports = mongoose.model('Property', PropertySchema);
