@@ -20,6 +20,7 @@ import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 const formatPrice = (val) => {
   if (!val) return "₹—";
@@ -33,20 +34,30 @@ export default function AdminDashboardPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {}
+  });
+
   const [activeTab, setActiveTab] = useState("listings");
   const [properties, setProperties] = useState([]);
   const [users, setUsers] = useState([]);
+  const [enquiries, setEnquiries] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [propRes, userRes] = await Promise.all([
+      const [propRes, userRes, enqRes] = await Promise.all([
         api.get("/properties"),
-        api.get("/users")
+        api.get("/users"),
+        api.get("/enquiries").catch(() => ({ data: { success: false, data: [] } }))
       ]);
       if (propRes.data.success) setProperties(propRes.data.data);
       if (userRes.data.success) setUsers(userRes.data.data);
+      if (enqRes && enqRes.data && enqRes.data.success) setEnquiries(enqRes.data.data);
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch system data.");
@@ -64,8 +75,16 @@ export default function AdminDashboardPage() {
     navigate("/admin/login");
   };
 
+  const handleDeletePropertyClick = (id) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete Property Listing",
+      message: "Are you sure you want to delete this property listing?",
+      onConfirm: () => handleDeleteProperty(id)
+    });
+  };
+
   const handleDeleteProperty = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this property listing?")) return;
     try {
       const { data } = await api.delete(`/properties/${id}`);
       if (data.success) {
@@ -142,41 +161,53 @@ export default function AdminDashboardPage() {
 
         {/* Stats Grid */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-2xl border border-white/10 bg-[#121214] p-6 space-y-4">
+          <Link
+            to="/admin/properties"
+            className="rounded-2xl border border-white/10 bg-[#121214] p-6 space-y-4 hover:border-emerald-500/50 hover:bg-white/5 transition-all block group cursor-pointer"
+          >
             <div className="flex items-center justify-between">
-              <span className="text-xs uppercase tracking-wider text-gray-400">System Listings</span>
-              <Home className="h-5 w-5 text-emerald-400" />
+              <span className="text-xs uppercase tracking-wider text-gray-400 group-hover:text-white transition-colors">System Listings</span>
+              <Home className="h-5 w-5 text-emerald-400 group-hover:scale-110 transition-transform" />
             </div>
-            <div className="font-display text-3xl font-bold">{properties.length}</div>
-            <div className="text-xs text-gray-500">Total properties in MongoDB</div>
-          </div>
+            <div className="font-display text-3xl font-bold text-white group-hover:text-emerald-400 transition-colors">{properties.length}</div>
+            <div className="text-xs text-gray-500">Total properties in database</div>
+          </Link>
 
-          <div className="rounded-2xl border border-white/10 bg-[#121214] p-6 space-y-4">
+          <Link
+            to="/admin/users"
+            className="rounded-2xl border border-white/10 bg-[#121214] p-6 space-y-4 hover:border-blue-500/50 hover:bg-white/5 transition-all block group cursor-pointer"
+          >
             <div className="flex items-center justify-between">
-              <span className="text-xs uppercase tracking-wider text-gray-400">Registered Users</span>
-              <Users className="h-5 w-5 text-blue-400" />
+              <span className="text-xs uppercase tracking-wider text-gray-400 group-hover:text-white transition-colors">Registered Users</span>
+              <Users className="h-5 w-5 text-blue-400 group-hover:scale-110 transition-transform" />
             </div>
-            <div className="font-display text-3xl font-bold">{users.length}</div>
+            <div className="font-display text-3xl font-bold text-white group-hover:text-blue-400 transition-colors">{users.length}</div>
             <div className="text-xs text-gray-500">Dealers, Admins, and Buyers</div>
-          </div>
+          </Link>
 
-          <div className="rounded-2xl border border-white/10 bg-[#121214] p-6 space-y-4">
+          <Link
+            to="/admin/enquiries"
+            className="rounded-2xl border border-white/10 bg-[#121214] p-6 space-y-4 hover:border-amber-500/50 hover:bg-white/5 transition-all block group cursor-pointer"
+          >
             <div className="flex items-center justify-between">
-              <span className="text-xs uppercase tracking-wider text-gray-400">API Status</span>
-              <Activity className="h-5 w-5 text-emerald-500 animate-pulse" />
+              <span className="text-xs uppercase tracking-wider text-gray-400 group-hover:text-white transition-colors">Callback Leads</span>
+              <Activity className="h-5 w-5 text-amber-400 group-hover:scale-110 transition-transform" />
             </div>
-            <div className="font-display text-xl font-bold text-emerald-400">Operational</div>
-            <div className="text-xs text-gray-500">All backend subsystems active</div>
-          </div>
+            <div className="font-display text-3xl font-bold text-white group-hover:text-amber-400 transition-colors">{enquiries.length}</div>
+            <div className="text-xs text-gray-500">Customer enquiries & callbacks</div>
+          </Link>
 
-          <div className="rounded-2xl border border-white/10 bg-[#121214] p-6 space-y-4">
+          <Link
+            to="/admin/promotions"
+            className="rounded-2xl border border-white/10 bg-[#121214] p-6 space-y-4 hover:border-purple-500/50 hover:bg-white/5 transition-all block group cursor-pointer"
+          >
             <div className="flex items-center justify-between">
-              <span className="text-xs uppercase tracking-wider text-gray-400">SMS Gateway</span>
-              <Settings className="h-5 w-5 text-amber-400" />
+              <span className="text-xs uppercase tracking-wider text-gray-400 group-hover:text-white transition-colors">Promotion Plans</span>
+              <Settings className="h-5 w-5 text-purple-400 group-hover:scale-110 transition-transform" />
             </div>
-            <div className="font-display text-xl font-bold text-gray-300">Sandbox Mode</div>
-            <div className="text-xs text-gray-500">OTP verified with dev mode bypass</div>
-          </div>
+            <div className="font-display text-xl font-bold text-white group-hover:text-purple-400 transition-colors">Configure Plans</div>
+            <div className="text-xs text-gray-500">Customize promo packages</div>
+          </Link>
         </div>
 
         {/* Tabs */}
@@ -271,7 +302,7 @@ export default function AdminDashboardPage() {
                                 <Pencil className="h-3.5 w-3.5" />
                               </Link>
                               <button
-                                onClick={() => handleDeleteProperty(p._id)}
+                                onClick={() => handleDeletePropertyClick(p._id)}
                                 className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-black border border-red-500/20 transition"
                                 title="Delete Listing"
                               >
@@ -376,6 +407,14 @@ export default function AdminDashboardPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+      />
     </div>
   );
 }
