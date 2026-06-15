@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Search, Loader2, MessageSquare, Phone, User, Calendar, CheckCircle2, Eye, X, Home, Trash2 } from "lucide-react";
+import { Search, Loader2, MessageSquare, Phone, User, Calendar, CheckCircle2, Eye, X, Home, Trash2, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react";
 import api from "@/utils/api";
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -10,6 +10,12 @@ export default function AdminEnquiriesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [updatingId, setUpdatingId] = useState(null);
+
+  // Pagination & Sorting states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortField, setSortField] = useState("createdAt");
+  const [sortDirection, setSortDirection] = useState("desc");
+  const itemsPerPage = 10;
 
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
@@ -82,7 +88,41 @@ export default function AdminEnquiriesPage() {
     }
   };
 
-  const filteredEnquiries = enquiries.filter((e) => {
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(prev => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const sortedEnquiries = [...enquiries].sort((a, b) => {
+    let valA = a[sortField];
+    let valB = b[sortField];
+
+    if (valA === undefined || valA === null) valA = "";
+    if (valB === undefined || valB === null) valB = "";
+
+    // For nested fields like property title, we can resolve them
+    if (sortField === "propertyTitle") {
+      valA = a.property?.title || "";
+      valB = b.property?.title || "";
+    }
+
+    if (typeof valA === "string") valA = valA.toLowerCase();
+    if (typeof valB === "string") valB = valB.toLowerCase();
+
+    if (valA < valB) return sortDirection === "asc" ? -1 : 1;
+    if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  const filteredEnquiries = sortedEnquiries.filter((e) => {
     const buyerMatch = e.buyerName?.toLowerCase().includes(searchQuery.toLowerCase());
     const phoneMatch = e.buyerPhone?.includes(searchQuery);
     const propertyMatch = e.property?.title?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -92,6 +132,11 @@ export default function AdminEnquiriesPage() {
 
     return textMatch && filterStatus;
   });
+
+  const totalPages = Math.ceil(filteredEnquiries.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredEnquiries.slice(indexOfFirstItem, indexOfLastItem);
 
   return (
     <div className="space-y-8 relative">
@@ -147,23 +192,59 @@ export default function AdminEnquiriesPage() {
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50/75 border-b border-slate-100 text-xs uppercase font-bold text-slate-500 tracking-wider">
                 <tr>
-                  <th className="px-6 py-4">Prospective Buyer</th>
-                  <th className="px-6 py-4">Property Reference</th>
-                  <th className="px-6 py-4">Dealer Contact</th>
-                  <th className="px-6 py-4">Message</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
+                  <th 
+                    className="px-6 py-4 cursor-pointer hover:bg-slate-100/80 transition group select-none"
+                    onClick={() => handleSort("buyerName")}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      Prospective Buyer
+                      {sortField === "buyerName" ? (
+                        sortDirection === "asc" ? <ChevronUp className="h-3.5 w-3.5 text-slate-900" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-900" />
+                      ) : (
+                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 transition" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-6 py-4 cursor-pointer hover:bg-slate-100/80 transition group select-none"
+                    onClick={() => handleSort("propertyTitle")}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      Property Reference
+                      {sortField === "propertyTitle" ? (
+                        sortDirection === "asc" ? <ChevronUp className="h-3.5 w-3.5 text-slate-900" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-900" />
+                      ) : (
+                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 transition" />
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 select-none">Dealer Contact</th>
+                  <th className="px-6 py-4 select-none">Message</th>
+                  <th 
+                    className="px-6 py-4 cursor-pointer hover:bg-slate-100/80 transition group select-none"
+                    onClick={() => handleSort("status")}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      Status
+                      {sortField === "status" ? (
+                        sortDirection === "asc" ? <ChevronUp className="h-3.5 w-3.5 text-slate-900" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-900" />
+                      ) : (
+                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 transition" />
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-right select-none">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {filteredEnquiries.length === 0 ? (
+                {currentItems.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="px-6 py-12 text-center text-slate-400 text-sm">
                       No matching callback enquiries found.
                     </td>
                   </tr>
                 ) : (
-                  filteredEnquiries.map((e) => (
+                  currentItems.map((e) => (
                     <tr key={e._id || e.id} className="hover:bg-slate-50/40 transition">
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
@@ -240,6 +321,48 @@ export default function AdminEnquiriesPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <span className="text-xs text-slate-500">
+                Showing <span className="font-semibold text-slate-900">{indexOfFirstItem + 1}</span> to{" "}
+                <span className="font-semibold text-slate-900">
+                  {Math.min(indexOfLastItem, filteredEnquiries.length)}
+                </span>{" "}
+                of <span className="font-semibold text-slate-900">{filteredEnquiries.length}</span> entries
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="inline-flex h-8 px-3 items-center gap-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" /> Previous
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-all shadow-xs ${
+                      currentPage === page
+                        ? "bg-slate-900 text-white"
+                        : "border border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="inline-flex h-8 px-3 items-center gap-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
+                >
+                  Next <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

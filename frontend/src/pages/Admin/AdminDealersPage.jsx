@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Search, Loader2, CheckCircle2, XCircle, AlertTriangle, ShieldCheck, Eye, X, Home, Mail, Phone, Trash2 } from "lucide-react";
+import { Search, Loader2, CheckCircle2, XCircle, AlertTriangle, ShieldCheck, Eye, X, Home, Mail, Phone, Trash2, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react";
 import api from "@/utils/api";
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -10,6 +10,12 @@ export default function AdminDealersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [processingId, setProcessingId] = useState(null);
+
+  // Pagination & Sorting states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortField, setSortField] = useState("createdAt");
+  const [sortDirection, setSortDirection] = useState("desc");
+  const itemsPerPage = 10;
 
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
@@ -130,7 +136,35 @@ export default function AdminDealersPage() {
     }
   };
 
-  const filteredDealers = dealers.filter((d) => {
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(prev => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const sortedDealers = [...dealers].sort((a, b) => {
+    let valA = a[sortField];
+    let valB = b[sortField];
+
+    if (valA === undefined || valA === null) valA = "";
+    if (valB === undefined || valB === null) valB = "";
+
+    if (typeof valA === "string") valA = valA.toLowerCase();
+    if (typeof valB === "string") valB = valB.toLowerCase();
+
+    if (valA < valB) return sortDirection === "asc" ? -1 : 1;
+    if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  const filteredDealers = sortedDealers.filter((d) => {
     const nameMatch = d.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const phoneMatch = d.phone?.includes(searchQuery);
     const panMatch = d.panNumber?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -141,6 +175,11 @@ export default function AdminDealersPage() {
 
     return (nameMatch || phoneMatch || panMatch) && statusMatch;
   });
+
+  const totalPages = Math.ceil(filteredDealers.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredDealers.slice(indexOfFirstItem, indexOfLastItem);
 
   return (
     <div className="space-y-8 relative">
@@ -196,22 +235,70 @@ export default function AdminDealersPage() {
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50/75 border-b border-slate-100 text-xs uppercase font-bold text-slate-500 tracking-wider">
                 <tr>
-                  <th className="px-6 py-4">Dealer</th>
-                  <th className="px-6 py-4">PAN Name</th>
-                  <th className="px-6 py-4">PAN Number</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4 text-right">KYC Operations</th>
+                  <th 
+                    className="px-6 py-4 cursor-pointer hover:bg-slate-100/80 transition group select-none"
+                    onClick={() => handleSort("name")}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      Dealer
+                      {sortField === "name" ? (
+                        sortDirection === "asc" ? <ChevronUp className="h-3.5 w-3.5 text-slate-900" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-900" />
+                      ) : (
+                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 transition" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-6 py-4 cursor-pointer hover:bg-slate-100/80 transition group select-none"
+                    onClick={() => handleSort("panName")}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      PAN Name
+                      {sortField === "panName" ? (
+                        sortDirection === "asc" ? <ChevronUp className="h-3.5 w-3.5 text-slate-900" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-900" />
+                      ) : (
+                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 transition" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-6 py-4 cursor-pointer hover:bg-slate-100/80 transition group select-none"
+                    onClick={() => handleSort("panNumber")}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      PAN Number
+                      {sortField === "panNumber" ? (
+                        sortDirection === "asc" ? <ChevronUp className="h-3.5 w-3.5 text-slate-900" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-900" />
+                      ) : (
+                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 transition" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-6 py-4 cursor-pointer hover:bg-slate-100/80 transition group select-none"
+                    onClick={() => handleSort("kycStatus")}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      Status
+                      {sortField === "kycStatus" ? (
+                        sortDirection === "asc" ? <ChevronUp className="h-3.5 w-3.5 text-slate-900" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-900" />
+                      ) : (
+                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 transition" />
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-right select-none">KYC Operations</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {filteredDealers.length === 0 ? (
+                {currentItems.length === 0 ? (
                   <tr>
                     <td colSpan="5" className="px-6 py-12 text-center text-slate-400 text-sm">
                       No matching dealer verification logs found.
                     </td>
                   </tr>
                 ) : (
-                  filteredDealers.map((d) => {
+                  currentItems.map((d) => {
                     const id = d.id || d._id;
                     return (
                       <tr key={id} className="hover:bg-slate-50/40 transition">
@@ -284,6 +371,48 @@ export default function AdminDealersPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <span className="text-xs text-slate-500">
+                Showing <span className="font-semibold text-slate-900">{indexOfFirstItem + 1}</span> to{" "}
+                <span className="font-semibold text-slate-900">
+                  {Math.min(indexOfLastItem, filteredDealers.length)}
+                </span>{" "}
+                of <span className="font-semibold text-slate-900">{filteredDealers.length}</span> entries
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="inline-flex h-8 px-3 items-center gap-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" /> Previous
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-all shadow-xs ${
+                      currentPage === page
+                        ? "bg-slate-900 text-white"
+                        : "border border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="inline-flex h-8 px-3 items-center gap-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
+                >
+                  Next <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

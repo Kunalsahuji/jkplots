@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Home, Search, Loader2, CheckCircle2, Star, Pencil, Trash2, SlidersHorizontal, Eye, X, Mail, Phone, Video } from "lucide-react";
+import { Home, Search, Loader2, CheckCircle2, Star, Pencil, Trash2, SlidersHorizontal, Eye, X, Mail, Phone, Video, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react";
 import api from "@/utils/api";
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -21,7 +21,7 @@ const getEmbedVideoUrl = (url) => {
     return `https://www.youtube.com/embed/${ytMatch[1]}`;
   }
   // Vimeo match
-  const vimeoMatch = url.match(/vimeo\.com(?:\/video)?\/([0-9]+)/i);
+  const vimeoMatch = url.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/i);
   if (vimeoMatch && vimeoMatch[1]) {
     return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
   }
@@ -36,6 +36,12 @@ export default function AdminPropertiesPage() {
   const [verificationFilter, setVerificationFilter] = useState("all");
   const [featuredFilter, setFeaturedFilter] = useState("all");
   const [actionLoadingId, setActionLoadingId] = useState(null);
+
+  // Pagination & Sorting states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortField, setSortField] = useState("createdAt");
+  const [sortDirection, setSortDirection] = useState("desc");
+  const itemsPerPage = 10;
 
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
@@ -155,7 +161,35 @@ export default function AdminPropertiesPage() {
 
   const uniqueCities = ["all", ...new Set(properties.map((p) => p.city).filter(Boolean))];
 
-  const filteredProperties = properties.filter((p) => {
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, cityFilter, verificationFilter, featuredFilter]);
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(prev => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const sortedProperties = [...properties].sort((a, b) => {
+    let valA = a[sortField];
+    let valB = b[sortField];
+
+    if (valA === undefined || valA === null) valA = "";
+    if (valB === undefined || valB === null) valB = "";
+
+    if (typeof valA === "string") valA = valA.toLowerCase();
+    if (typeof valB === "string") valB = valB.toLowerCase();
+
+    if (valA < valB) return sortDirection === "asc" ? -1 : 1;
+    if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  const filteredProperties = sortedProperties.filter((p) => {
     const query = searchQuery.toLowerCase();
     const titleMatch = p.title?.toLowerCase().includes(query);
     const localityMatch = p.locality?.toLowerCase().includes(query);
@@ -174,6 +208,11 @@ export default function AdminPropertiesPage() {
 
     return textMatch && filterCity && filterVerify && filterFeatured;
   });
+
+  const totalPages = Math.ceil(filteredProperties.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredProperties.slice(indexOfFirstItem, indexOfLastItem);
 
   return (
     <div className="space-y-8 relative">
@@ -259,22 +298,58 @@ export default function AdminPropertiesPage() {
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50/75 border-b border-slate-100 text-xs uppercase font-bold text-slate-500 tracking-wider">
                 <tr>
-                  <th className="px-6 py-4">Property details</th>
-                  <th className="px-6 py-4">City / Locality</th>
-                  <th className="px-6 py-4">Asking Price</th>
-                  <th className="px-6 py-4">Dealer Contact</th>
-                  <th className="px-6 py-4 text-right">Moderation Operations</th>
+                  <th 
+                    className="px-6 py-4 cursor-pointer hover:bg-slate-100/80 transition group select-none"
+                    onClick={() => handleSort("title")}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      Property details
+                      {sortField === "title" ? (
+                        sortDirection === "asc" ? <ChevronUp className="h-3.5 w-3.5 text-slate-900" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-900" />
+                      ) : (
+                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 transition" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-6 py-4 cursor-pointer hover:bg-slate-100/80 transition group select-none"
+                    onClick={() => handleSort("city")}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      City / Locality
+                      {sortField === "city" ? (
+                        sortDirection === "asc" ? <ChevronUp className="h-3.5 w-3.5 text-slate-900" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-900" />
+                      ) : (
+                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 transition" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-6 py-4 cursor-pointer hover:bg-slate-100/80 transition group select-none"
+                    onClick={() => handleSort("price")}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      Asking Price
+                      {sortField === "price" ? (
+                        sortDirection === "asc" ? <ChevronUp className="h-3.5 w-3.5 text-slate-900" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-900" />
+                      ) : (
+                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 transition" />
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 select-none">Dealer Contact</th>
+                  <th className="px-6 py-4 text-right select-none">Moderation Operations</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {filteredProperties.length === 0 ? (
+                {currentItems.length === 0 ? (
                   <tr>
                     <td colSpan="5" className="px-6 py-12 text-center text-slate-400 text-sm">
                       No property listings match current search parameters.
                     </td>
                   </tr>
                 ) : (
-                  filteredProperties.map((p) => {
+                  currentItems.map((p) => {
                     const id = p._id || p.id;
                     return (
                       <tr key={id} className="hover:bg-slate-50/40 transition">
@@ -351,6 +426,48 @@ export default function AdminPropertiesPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <span className="text-xs text-slate-500">
+                Showing <span className="font-semibold text-slate-900">{indexOfFirstItem + 1}</span> to{" "}
+                <span className="font-semibold text-slate-900">
+                  {Math.min(indexOfLastItem, filteredProperties.length)}
+                </span>{" "}
+                of <span className="font-semibold text-slate-900">{filteredProperties.length}</span> entries
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="inline-flex h-8 px-3 items-center gap-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" /> Previous
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-all shadow-xs ${
+                      currentPage === page
+                        ? "bg-slate-900 text-white"
+                        : "border border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="inline-flex h-8 px-3 items-center gap-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
+                >
+                  Next <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

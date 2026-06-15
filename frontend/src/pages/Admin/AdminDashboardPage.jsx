@@ -14,7 +14,9 @@ import {
   Building,
   DollarSign,
   Plus,
-  Pencil
+  Pencil,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
@@ -46,6 +48,12 @@ export default function AdminDashboardPage() {
   const [users, setUsers] = useState([]);
   const [enquiries, setEnquiries] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Pagination states (compact pages of 5 items for dashboard view)
+  const [propertiesPage, setPropertiesPage] = useState(1);
+  const [usersPage, setUsersPage] = useState(1);
+  const [enquiriesPage, setEnquiriesPage] = useState(1);
+  const itemsPerPage = 5;
 
   const fetchData = async () => {
     setLoading(true);
@@ -121,6 +129,22 @@ export default function AdminDashboardPage() {
       toast.error("Failed to toggle featured state.");
     }
   };
+
+  // Pagination slicing
+  const propertiesTotalPages = Math.ceil(properties.length / itemsPerPage);
+  const propertiesEnd = propertiesPage * itemsPerPage;
+  const propertiesStart = propertiesEnd - itemsPerPage;
+  const currentProperties = properties.slice(propertiesStart, propertiesEnd);
+
+  const usersTotalPages = Math.ceil(users.length / itemsPerPage);
+  const usersEnd = usersPage * itemsPerPage;
+  const usersStart = usersEnd - itemsPerPage;
+  const currentUsers = users.slice(usersStart, usersEnd);
+
+  const enquiriesTotalPages = Math.ceil(enquiries.length / itemsPerPage);
+  const enquiriesEnd = enquiriesPage * itemsPerPage;
+  const enquiriesStart = enquiriesEnd - itemsPerPage;
+  const currentEnquiries = enquiries.slice(enquiriesStart, enquiriesEnd);
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white">
@@ -215,6 +239,7 @@ export default function AdminDashboardPage() {
           {[
             { id: "listings", label: "Properties Moderation", icon: Home },
             { id: "users", label: "Registered Users", icon: Users },
+            { id: "enquiries", label: "Callback Enquiries", icon: Activity },
             { id: "system", label: "System Config", icon: Settings },
           ].map((t) => (
             <button
@@ -253,68 +278,118 @@ export default function AdminDashboardPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                      {properties.map((p) => (
-                        <tr key={p._id} className="hover:bg-white/5 transition">
-                          <td className="px-6 py-4 font-semibold text-white">
-                            <div className="flex flex-col">
-                              <span>{p.title}</span>
-                              <span className="text-xs text-gray-500 font-normal">{p.type} · For {p.purpose}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-gray-400">
-                            {p.locality}, {p.city}
-                          </td>
-                          <td className="px-6 py-4 font-mono font-semibold text-emerald-400">
-                            {formatPrice(p.price)}
-                          </td>
-                          <td className="px-6 py-4 text-gray-400">
-                            {p.contactNumber || p.dealerPhone}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center justify-center gap-2">
-                              <button
-                                onClick={() => toggleVerifyProperty(p)}
-                                className={`flex h-8 px-3 items-center gap-1 rounded-xl text-xs font-bold transition ${
-                                  p.verified
-                                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                                    : "bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10"
-                                }`}
-                              >
-                                <CheckCircle className="h-3.5 w-3.5" />
-                                {p.verified ? "Verified" : "Verify"}
-                              </button>
-                              <button
-                                onClick={() => toggleFeaturedProperty(p)}
-                                className={`flex h-8 px-3 items-center gap-1 rounded-xl text-xs font-bold transition ${
-                                  p.featured
-                                    ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                                    : "bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10"
-                                }`}
-                              >
-                                <Star className="h-3.5 w-3.5" />
-                                {p.featured ? "Featured" : "Feature"}
-                              </button>
-                              <Link
-                                to={`/admin/properties/edit/${p._id}`}
-                                className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10 transition"
-                                title="Edit Listing"
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Link>
-                              <button
-                                onClick={() => handleDeletePropertyClick(p._id)}
-                                className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-black border border-red-500/20 transition"
-                                title="Delete Listing"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
+                      {currentProperties.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="px-6 py-12 text-center text-gray-500 text-sm">
+                            No listings registered in inventory.
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        currentProperties.map((p) => (
+                          <tr key={p._id} className="hover:bg-white/5 transition">
+                            <td className="px-6 py-4 font-semibold text-white">
+                              <div className="flex flex-col">
+                                <span>{p.title}</span>
+                                <span className="text-xs text-gray-500 font-normal">{p.type} · For {p.purpose}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-gray-400">
+                              {p.locality}, {p.city}
+                            </td>
+                            <td className="px-6 py-4 font-mono font-semibold text-emerald-400">
+                              {formatPrice(p.price)}
+                            </td>
+                            <td className="px-6 py-4 text-gray-400">
+                              {p.contactNumber || p.dealerPhone}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  onClick={() => toggleVerifyProperty(p)}
+                                  className={`flex h-8 px-3 items-center gap-1 rounded-xl text-xs font-bold transition ${
+                                    p.verified
+                                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                      : "bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10"
+                                  }`}
+                                >
+                                  <CheckCircle className="h-3.5 w-3.5" />
+                                  {p.verified ? "Verified" : "Verify"}
+                                </button>
+                                <button
+                                  onClick={() => toggleFeaturedProperty(p)}
+                                  className={`flex h-8 px-3 items-center gap-1 rounded-xl text-xs font-bold transition ${
+                                    p.featured
+                                      ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                                      : "bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10"
+                                  }`}
+                                >
+                                  <Star className="h-3.5 w-3.5" />
+                                  {p.featured ? "Featured" : "Feature"}
+                                </button>
+                                <Link
+                                  to={`/admin/properties/edit/${p._id}`}
+                                  className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10 transition"
+                                  title="Edit Listing"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Link>
+                                <button
+                                  onClick={() => handleDeletePropertyClick(p._id)}
+                                  className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-black border border-red-500/20 transition"
+                                  title="Delete Listing"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
+
+                {/* Properties Pagination Controls */}
+                {propertiesTotalPages > 1 && (
+                  <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between bg-[#0e0e10]/50">
+                    <span className="text-xs text-gray-400">
+                      Showing <span className="font-semibold text-white">{propertiesStart + 1}</span> to{" "}
+                      <span className="font-semibold text-white">
+                        {Math.min(propertiesEnd, properties.length)}
+                      </span>{" "}
+                      of <span className="font-semibold text-white">{properties.length}</span> entries
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setPropertiesPage(prev => Math.max(prev - 1, 1))}
+                        disabled={propertiesPage === 1}
+                        className="inline-flex h-8 px-3 items-center gap-1 rounded-lg border border-white/10 bg-[#18181b] hover:bg-white/5 text-gray-300 text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft className="h-3.5 w-3.5" /> Previous
+                      </button>
+                      {Array.from({ length: propertiesTotalPages }, (_, i) => i + 1).map((page) => (
+                        <button
+                          key={page}
+                          onClick={() => setPropertiesPage(page)}
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition ${
+                            propertiesPage === page
+                              ? "bg-emerald-500 text-black font-extrabold"
+                              : "border border-white/10 bg-[#18181b] hover:bg-white/5 text-gray-300"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => setPropertiesPage(prev => Math.min(prev + 1, propertiesTotalPages))}
+                        disabled={propertiesPage === propertiesTotalPages}
+                        className="inline-flex h-8 px-3 items-center gap-1 rounded-lg border border-white/10 bg-[#18181b] hover:bg-white/5 text-gray-300 text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Next <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -330,34 +405,180 @@ export default function AdminDashboardPage() {
                         <th className="px-6 py-4">Registered Date</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {users.map((u) => (
-                        <tr key={u.id || u._id} className="hover:bg-white/5 transition">
-                          <td className="px-6 py-4 font-semibold text-white">
-                            {u.name || "N/A"}
-                          </td>
-                          <td className="px-6 py-4 font-mono text-gray-400">
-                            +91 {u.phone}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ${
-                              u.role === "admin"
-                                ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                                : u.role === "dealer"
-                                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                                : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                            }`}>
-                              {u.role}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-gray-500">
-                            {new Date(u.createdAt).toLocaleDateString()}
+                     <tbody className="divide-y divide-white/5">
+                      {currentUsers.length === 0 ? (
+                        <tr>
+                          <td colSpan="4" className="px-6 py-12 text-center text-gray-500 text-sm">
+                            No registered users found.
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        currentUsers.map((u) => (
+                          <tr key={u.id || u._id} className="hover:bg-white/5 transition">
+                            <td className="px-6 py-4 font-semibold text-white">
+                              {u.name || "N/A"}
+                            </td>
+                            <td className="px-6 py-4 font-mono text-gray-400">
+                              +91 {u.phone}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ${
+                                u.role === "admin"
+                                  ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                                  : u.role === "dealer"
+                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                  : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                              }`}>
+                                {u.role}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-gray-500">
+                              {new Date(u.createdAt).toLocaleDateString()}
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
+
+                {/* Users Pagination Controls */}
+                {usersTotalPages > 1 && (
+                  <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between bg-[#0e0e10]/50">
+                    <span className="text-xs text-gray-400">
+                      Showing <span className="font-semibold text-white">{usersStart + 1}</span> to{" "}
+                      <span className="font-semibold text-white">
+                        {Math.min(usersEnd, users.length)}
+                      </span>{" "}
+                      of <span className="font-semibold text-white">{users.length}</span> entries
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setUsersPage(prev => Math.max(prev - 1, 1))}
+                        disabled={usersPage === 1}
+                        className="inline-flex h-8 px-3 items-center gap-1 rounded-lg border border-white/10 bg-[#18181b] hover:bg-white/5 text-gray-300 text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft className="h-3.5 w-3.5" /> Previous
+                      </button>
+                      {Array.from({ length: usersTotalPages }, (_, i) => i + 1).map((page) => (
+                        <button
+                          key={page}
+                          onClick={() => setUsersPage(page)}
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition ${
+                            usersPage === page
+                              ? "bg-[#3b82f6] text-white font-extrabold"
+                              : "border border-white/10 bg-[#18181b] hover:bg-white/5 text-gray-300"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => setUsersPage(prev => Math.min(prev + 1, usersTotalPages))}
+                        disabled={usersPage === usersTotalPages}
+                        className="inline-flex h-8 px-3 items-center gap-1 rounded-lg border border-white/10 bg-[#18181b] hover:bg-white/5 text-gray-300 text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Next <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === "enquiries" && (
+              <div className="rounded-2xl border border-white/10 bg-[#121214] overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-gray-300">
+                    <thead className="bg-[#18181b] text-xs uppercase text-gray-400 border-b border-white/10">
+                      <tr>
+                        <th className="px-6 py-4">Prospective Buyer</th>
+                        <th className="px-6 py-4">Property Reference</th>
+                        <th className="px-6 py-4">Status</th>
+                        <th className="px-6 py-4">Received Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {currentEnquiries.length === 0 ? (
+                        <tr>
+                          <td colSpan="4" className="px-6 py-12 text-center text-gray-500 text-sm">
+                            No callback enquiries logged.
+                          </td>
+                        </tr>
+                      ) : (
+                        currentEnquiries.map((e) => (
+                          <tr key={e._id || e.id} className="hover:bg-white/5 transition">
+                            <td className="px-6 py-4 font-semibold text-white">
+                              <div className="flex flex-col">
+                                <span>{e.buyerName}</span>
+                                <span className="text-xs text-gray-500 font-normal">{e.buyerPhone}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-gray-400">
+                              {e.property ? e.property.title : <span className="text-gray-600 italic">Property Removed</span>}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                e.status === "Closed"
+                                  ? "bg-white/5 text-gray-500 border border-white/10"
+                                  : e.status === "Contacted"
+                                  ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                                  : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                              }`}>
+                                {e.status || "Pending"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-gray-500">
+                              {e.createdAt ? new Date(e.createdAt).toLocaleDateString() : "N/A"}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Enquiries Pagination Controls */}
+                {enquiriesTotalPages > 1 && (
+                  <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between bg-[#0e0e10]/50">
+                    <span className="text-xs text-gray-400">
+                      Showing <span className="font-semibold text-white">{enquiriesStart + 1}</span> to{" "}
+                      <span className="font-semibold text-white">
+                        {Math.min(enquiriesEnd, enquiries.length)}
+                      </span>{" "}
+                      of <span className="font-semibold text-white">{enquiries.length}</span> entries
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setEnquiriesPage(prev => Math.max(prev - 1, 1))}
+                        disabled={enquiriesPage === 1}
+                        className="inline-flex h-8 px-3 items-center gap-1 rounded-lg border border-white/10 bg-[#18181b] hover:bg-white/5 text-gray-300 text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft className="h-3.5 w-3.5" /> Previous
+                      </button>
+                      {Array.from({ length: enquiriesTotalPages }, (_, i) => i + 1).map((page) => (
+                        <button
+                          key={page}
+                          onClick={() => setEnquiriesPage(page)}
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition ${
+                            enquiriesPage === page
+                              ? "bg-amber-500 text-black font-extrabold"
+                              : "border border-white/10 bg-[#18181b] hover:bg-white/5 text-gray-300"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => setEnquiriesPage(prev => Math.min(prev + 1, enquiriesTotalPages))}
+                        disabled={enquiriesPage === enquiriesTotalPages}
+                        className="inline-flex h-8 px-3 items-center gap-1 rounded-lg border border-white/10 bg-[#18181b] hover:bg-white/5 text-gray-300 text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Next <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
