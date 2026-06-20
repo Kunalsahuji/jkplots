@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   Home,
@@ -60,6 +60,7 @@ export default function UserDashboard() {
   const [newName, setNewName] = useState(user?.name || "");
   const [updatingProfile, setUpdatingProfile] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [chartDays, setChartDays] = useState(30);
   
   // Keep activeTab in sync with URL
   useEffect(() => {
@@ -212,6 +213,25 @@ export default function UserDashboard() {
   // Enquiries categorisation
   const receivedEnquiries = enquiries.filter(e => e.dealerPhone === user?.phone);
   const sentEnquiries = enquiries.filter(e => e.buyerPhone === user?.phone);
+
+  const chartData = useMemo(() => {
+    const data = [];
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    
+    const relevantEnquiries = isAdmin ? enquiries : (isDealer ? receivedEnquiries : sentEnquiries);
+
+    for (let i = chartDays - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateString = d.toLocaleDateString();
+      const dayEnquiries = relevantEnquiries.filter(e => new Date(e.createdAt).toLocaleDateString() === dateString).length;
+      data.push({ date: dateString, enquiries: dayEnquiries });
+    }
+
+    const maxVal = Math.max(...data.map(d => d.enquiries), 1);
+    return data.map(d => ({ ...d, heightPercentage: Math.max((d.enquiries / maxVal) * 100, 2) }));
+  }, [chartDays, enquiries, receivedEnquiries, sentEnquiries, isAdmin, isDealer]);
 
   const stats = [
     { label: isAdmin ? "System Listings" : "Active listings", value: (isDealer || isAdmin) ? dbProperties.length : "0", icon: Home, trend: "Live status", tab: isAdmin ? "All Listings" : "My Listings" },
@@ -392,25 +412,26 @@ export default function UserDashboard() {
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <h2 className="font-display text-lg font-bold">Workspace Activity</h2>
-                    <p className="text-xs text-muted-foreground">Listing views & enquiries rate (last 30 days)</p>
+                    <p className="text-xs text-muted-foreground">Property enquiries timeline (last {chartDays} days)</p>
                   </div>
-                  <select className="rounded-full border border-border bg-background px-3 py-1.5 text-xs outline-none focus:border-primary">
-                    <option>30 days</option>
-                    <option>7 days</option>
+                  <select 
+                    value={chartDays}
+                    onChange={(e) => setChartDays(Number(e.target.value))}
+                    className="rounded-full border border-border bg-background px-3 py-1.5 text-xs outline-none focus:border-primary"
+                  >
+                    <option value={30}>30 days</option>
+                    <option value={7}>7 days</option>
                   </select>
                 </div>
                 <div className="flex h-48 items-end gap-1.5 pt-4">
-                  {Array.from({ length: 30 }).map((_, i) => {
-                    const h = 20 + Math.sin(i / 3) * 30 + Math.random() * 40;
-                    return (
-                      <div
-                        key={i}
-                        className="flex-1 rounded-t bg-gradient-to-t from-primary to-accent transition-all hover:opacity-85"
-                        style={{ height: `${h}%` }}
-                        title={`Day ${i+1}: ${Math.round(h * 15)} views`}
-                      />
-                    );
-                  })}
+                  {chartData.map((d, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 rounded-t bg-gradient-to-t from-primary to-accent transition-all hover:opacity-85"
+                      style={{ height: `${d.heightPercentage}%` }}
+                      title={`${d.date}: ${d.enquiries} enquiries`}
+                    />
+                  ))}
                 </div>
               </div>
             </div>

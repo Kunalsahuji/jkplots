@@ -23,6 +23,17 @@ exports.createEnquiry = async (req, res, next) => {
         const buyerPhone = phone ? `+91${phone.replace(/\D/g, '').slice(-10)}` : req.user.phone;
         const buyerName = name || req.user.name;
 
+        // Prevent multiple active enquiries for the same property
+        const existingEnquiry = await Enquiry.findOne({
+            property: propertyId,
+            buyer: req.user._id,
+            status: { $in: ['Pending', 'Contacted'] }
+        });
+
+        if (existingEnquiry) {
+            return next(new ErrorResponse('You already have an active callback request for this property. Please wait for the dealer to close it.', 400));
+        }
+
         const enquiry = await Enquiry.create({
             property: propertyId,
             dealer: property.dealer,

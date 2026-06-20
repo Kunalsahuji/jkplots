@@ -216,16 +216,20 @@ export default function PropertyDetailPage() {
 
   const dealerName = p.dealer?.name || "Verified Agent";
   const dealerPhone = p.contactNumber || p.dealerPhone || p.dealer?.phone || "9876543210";
+  const cleanPhone = dealerPhone.replace(/\D/g, "").slice(-10);
+  const displayDealerPhone = isAuthenticated ? dealerPhone : cleanPhone.substring(0, 2) + "******" + cleanPhone.substring(8);
   const dealerInitial = dealerName.charAt(0).toUpperCase();
   const isDealerVerified = p.dealer?.verified || true;
 
   const handleWhatsApp = () => {
+    if (!requireAuth("contact dealer via WhatsApp")) return;
     const cleanPhone = dealerPhone.replace(/\D/g, "");
     const text = encodeURIComponent(`Hi, I'm interested in your property "${title}" listed on JKPlot.`);
     window.open(`https://wa.me/91${cleanPhone}?text=${text}`, "_blank");
   };
 
   const handleCall = () => {
+    if (!requireAuth("contact dealer via Call")) return;
     window.open(`tel:${dealerPhone}`, "_self");
   };
 
@@ -580,7 +584,9 @@ export default function PropertyDetailPage() {
                     </div>
                     <div>
                       <span className="text-muted-foreground block text-[10px] uppercase tracking-wider font-bold">Contact Phone</span>
-                      <span className="text-sm font-bold text-foreground">{p.contactNumber}</span>
+                      <span className="text-sm font-bold text-foreground">
+                        {isAuthenticated ? p.contactNumber : p.contactNumber.replace(/\D/g, "").slice(-10).substring(0, 2) + "******" + p.contactNumber.replace(/\D/g, "").slice(-10).substring(8)}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -880,7 +886,7 @@ export default function PropertyDetailPage() {
                   <MessageCircle className="h-4 w-4" /> WhatsApp Dealer
                 </Button>
                 <Button onClick={handleCall} variant="outline" className="w-full gap-2 rounded-xl">
-                  <Phone className="h-4 w-4" /> Call: {dealerPhone}
+                  <Phone className="h-4 w-4" /> Call: {displayDealerPhone}
                 </Button>
               </div>
 
