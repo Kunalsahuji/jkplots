@@ -637,14 +637,32 @@ export default function PropertyDetailPage() {
           </Section>
 
           {/* Live Google Maps Embed */}
-          <Section title="Location">
-            <div className="aspect-[16/9] overflow-hidden rounded-2xl border border-border bg-muted shadow-inner">
+          <Section title="Location" icon={MapPin}>
+            <div className="relative aspect-[16/9] overflow-hidden rounded-2xl border border-border bg-muted shadow-inner group">
+              <div className="absolute inset-x-0 top-0 z-10 p-4 pointer-events-none flex items-center justify-between">
+                <div className="bg-background/90 backdrop-blur shadow-sm border border-border rounded-lg px-3 py-2 flex items-center gap-2 pointer-events-auto max-w-[60%]">
+                  <div className="p-1.5 bg-primary/10 rounded-md shrink-0">
+                    <MapPin className="h-4 w-4 text-primary animate-pulse" />
+                  </div>
+                  <span className="text-sm font-semibold truncate">
+                    {[locality, city, p.district].filter(Boolean).join(", ")}
+                  </span>
+                </div>
+                <a 
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([locality, city, p.district, p.state, "India"].filter(Boolean).join(", "))}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="bg-primary text-primary-foreground shadow-sm rounded-lg px-4 py-2.5 text-xs font-bold pointer-events-auto hover:bg-primary/90 transition-colors flex items-center gap-2 shrink-0"
+                >
+                  <MapPin className="h-3 w-3" /> <span className="hidden sm:inline">Open in Maps</span>
+                </a>
+              </div>
               <iframe
                 title="Google Maps Location"
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}
-                src={`https://maps.google.com/maps?q=${encodeURIComponent(locality + ", " + city)}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
+                src={`https://maps.google.com/maps?q=${encodeURIComponent([locality, city, p.district, p.state, "India"].filter(Boolean).join(", "))}&t=m&z=15&output=embed&iwloc=Near`}
                 loading="lazy"
                 allowFullScreen
               />

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Sparkles, Crown, Loader2, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Sparkles, Crown, Loader2, ArrowRight, CheckCircle2, Search } from "lucide-react";
 import api from "@/utils/api";
 import { toast } from "sonner";
 import { PropertyCard } from "@/components/site/PropertyCard";
@@ -25,6 +25,11 @@ export default function PromotePropertyTab({ properties, refreshData }) {
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [processingId, setProcessingId] = useState(null);
+  
+  // Pagination & Filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 6;
 
   useEffect(() => {
     fetchPlans();
@@ -144,6 +149,20 @@ export default function PromotePropertyTab({ properties, refreshData }) {
     p => !p.isFeatured || new Date(p.featuredUntil) <= new Date()
   );
 
+  // Apply search filter
+  const filteredNormal = normalProperties.filter(p => 
+    p.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    p.city?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredNormal.length / itemsPerPage);
+  const paginatedNormal = filteredNormal.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+  // Reset page when search changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
+
   return (
     <div className="space-y-10">
       {/* Promoted Properties Section */}
@@ -171,29 +190,69 @@ export default function PromotePropertyTab({ properties, refreshData }) {
 
       {/* Unpromoted Properties Section */}
       <section className="space-y-4">
-        <div className="flex items-center gap-2 border-b border-border pb-3">
-          <h2 className="text-xl font-bold font-display">Wanna boost/promote your property?</h2>
-          <p className="text-sm text-muted-foreground hidden sm:block">- Get 10x more views by featuring them</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-3">
+          <div>
+            <h2 className="text-xl font-bold font-display">Wanna boost/promote your property?</h2>
+            <p className="text-sm text-muted-foreground hidden sm:block">Get 10x more views by featuring them</p>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <input
+              type="text"
+              placeholder="Search by title or city..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-4 py-2 bg-secondary/50 border-none outline-none rounded-full text-sm font-medium focus:ring-2 focus:ring-primary/20 w-full sm:w-64"
+            />
+          </div>
         </div>
         
-        {normalProperties.length === 0 ? (
+        {filteredNormal.length === 0 ? (
           <div className="bg-card border border-border rounded-2xl p-8 text-center">
-            <p className="text-muted-foreground text-sm font-medium">You don't have any normal properties to promote right now.</p>
+            <p className="text-muted-foreground text-sm font-medium">
+              {searchQuery ? "No properties match your search." : "You don't have any normal properties to promote right now."}
+            </p>
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {normalProperties.map((property) => (
-              <div key={property._id} className="relative flex flex-col h-full">
-                <PropertyCard p={property} />
-                <button
-                  onClick={() => handleBoostClick(property)}
-                  className="mt-3 w-full bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all shadow-sm"
-                >
-                  Boost Property <Sparkles size={16} className="text-yellow-400" />
-                </button>
+          <>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {paginatedNormal.map((property) => (
+                <div key={property._id} className="relative flex flex-col h-full">
+                  <PropertyCard p={property} />
+                  <button
+                    onClick={() => handleBoostClick(property)}
+                    className="mt-3 w-full bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all shadow-sm"
+                  >
+                    Boost Property <Sparkles size={16} className="text-yellow-400" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            {totalPages > 1 && (
+              <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
+                <p className="text-xs text-muted-foreground">
+                  Showing {((page - 1) * itemsPerPage) + 1} to {Math.min(page * itemsPerPage, filteredNormal.length)} of {filteredNormal.length}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="h-8 rounded-full border border-border px-3 text-xs font-medium hover:bg-secondary disabled:opacity-50"
+                  >
+                    Prev
+                  </button>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="h-8 rounded-full border border-border px-3 text-xs font-medium hover:bg-secondary disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </section>
 

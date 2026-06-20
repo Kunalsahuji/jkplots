@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import heroImg from "@/assets/hero-kashmir.jpg";
 import prop1 from "@/assets/prop-1.jpg";
@@ -27,9 +27,49 @@ import {
   KeyRound,
   LandPlot,
   Store,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 const heroImages = [heroImg, prop1, prop2, prop3, prop4];
+
+const purposeCategories = [
+  {
+    label: "Buy a Home",
+    desc: "Villas, Apartments",
+    icon: HomeIcon,
+    img: catBuy,
+    query: "purpose=Buy&type=Villa",
+  },
+  {
+    label: "Rent a Place",
+    desc: "Flexible, furnished",
+    icon: KeyRound,
+    img: catRent,
+    query: "purpose=Rent",
+  },
+  {
+    label: "Buy Land",
+    desc: "Plots & farms",
+    icon: LandPlot,
+    img: catLand,
+    query: "purpose=Buy&type=Plot",
+  },
+  {
+    label: "Commercial",
+    desc: "Shops, offices",
+    icon: Store,
+    img: catCommercial,
+    query: "purpose=Commercial&type=Commercial",
+  },
+  {
+    label: "PG / Co-living",
+    desc: "Shared spaces, hostels",
+    icon: HomeIcon,
+    img: prop3,
+    query: "purpose=Rent&type=PG",
+  }
+];
 
 export default function HomePage() {
   const [propertyList, setPropertyList] = useState([]);
@@ -138,41 +178,13 @@ export default function HomePage() {
             <h2 className="mt-2 font-display text-3xl font-bold md:text-4xl">Browse by purpose</h2>
           </div>
         </div>
-        <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-4 md:grid md:grid-cols-4">
-          {[
-            {
-              label: "Buy a Home",
-              desc: "Villas, Apartments",
-              icon: HomeIcon,
-              img: catBuy,
-              query: "purpose=Buy&type=Villa",
-            },
-            {
-              label: "Rent a Place",
-              desc: "Flexible, furnished",
-              icon: KeyRound,
-              img: catRent,
-              query: "purpose=Rent",
-            },
-            {
-              label: "Buy Land",
-              desc: "Plots & farms",
-              icon: LandPlot,
-              img: catLand,
-              query: "purpose=Buy&type=Plot",
-            },
-            {
-              label: "Commercial",
-              desc: "Shops, offices",
-              icon: Store,
-              img: catCommercial,
-              query: "purpose=Commercial&type=Commercial",
-            },
-          ].map((c) => (
+        <InfiniteSlider 
+          items={purposeCategories}
+          renderItem={(c, i) => (
             <Link
-              key={c.label}
+              key={i}
               to={`/properties?${c.query}`}
-              className="group relative block aspect-[4/5] w-[240px] sm:w-[280px] md:w-auto shrink-0 snap-start overflow-hidden rounded-2xl border border-border bg-card shadow-soft transition-all hover:-translate-y-1 hover:shadow-elevated"
+              className="group relative block aspect-[4/5] w-[240px] sm:w-[280px] lg:w-[300px] shrink-0 overflow-hidden rounded-2xl border border-border bg-card shadow-soft transition-all hover:-translate-y-1 hover:shadow-elevated"
             >
               <img
                 src={c.img}
@@ -194,8 +206,8 @@ export default function HomePage() {
                 </div>
               </div>
             </Link>
-          ))}
-        </div>
+          )}
+        />
       </section>
 
       {/* FEATURED */}
@@ -211,29 +223,30 @@ export default function HomePage() {
       )}
 
       {/* CITIES */}
-      <section className="container-px mx-auto max-w-7xl py-16">
+      <section className="container-px mx-auto max-w-7xl py-16 overflow-hidden">
         <SectionHeader title="Explore by city" sub="From the lakes of Srinagar to the meadows of Sonmarg" />
-        <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
-          {cities.map((c) => (
+        <InfiniteSlider 
+          items={cities}
+          renderItem={(c, i) => (
             <Link
-              key={c.name}
+              key={i}
               to={`/properties?city=${c.name}`}
-              className="group relative aspect-[3/4] overflow-hidden rounded-xl"
+              className="group/card relative aspect-[3/4] w-[180px] sm:w-[220px] lg:w-[240px] shrink-0 overflow-hidden rounded-2xl shadow-soft"
             >
               <img
                 src={c.image}
                 alt={c.name}
                 loading="lazy"
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover/card:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-overlay" />
-              <div className="absolute inset-x-0 bottom-0 p-3 text-background">
-                <h3 className="font-display text-lg font-bold">{c.name}</h3>
-                <p className="text-[11px] text-background/80">{c.count} properties</p>
+              <div className="absolute inset-x-0 bottom-0 p-4 text-background">
+                <h3 className="font-display text-xl font-bold leading-none">{c.name}</h3>
+                <p className="mt-1 text-[11px] font-medium text-background/80">{c.count} properties</p>
               </div>
             </Link>
-          ))}
-        </div>
+          )}
+        />
       </section>
 
       {/* WHY US */}
@@ -385,6 +398,79 @@ function SectionHeader({ title, sub, link }) {
           View all <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       )}
+    </div>
+  );
+}
+
+function InfiniteSlider({ items, renderItem }) {
+  const scrollRef = useRef(null);
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Extend items array to create infinite illusion
+  const extendedItems = [...items, ...items, ...items, ...items];
+
+  useEffect(() => {
+    let animationFrameId;
+    let scrollAmount = 0.6; // Speed
+
+    const scroll = () => {
+      if (scrollRef.current && !isPaused) {
+        scrollRef.current.scrollLeft += scrollAmount;
+        const setWidth = scrollRef.current.scrollWidth / 4;
+        
+        // Reset scroll continuously to create infinite loop
+        if (scrollRef.current.scrollLeft >= setWidth * 2) {
+          scrollRef.current.scrollLeft -= setWidth;
+        } else if (scrollRef.current.scrollLeft <= 0) {
+          scrollRef.current.scrollLeft += setWidth;
+        }
+      }
+      animationFrameId = requestAnimationFrame(scroll);
+    };
+
+    animationFrameId = requestAnimationFrame(scroll);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [isPaused]);
+
+  const scrollLeft = () => {
+    if (scrollRef.current) scrollRef.current.scrollBy({ left: -300, behavior: 'smooth' });
+  };
+  
+  const scrollRight = () => {
+    if (scrollRef.current) scrollRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+  };
+
+  return (
+    <div 
+      className="relative mt-8 group -mx-4 px-4 sm:mx-0 sm:px-0" 
+      onMouseEnter={() => setIsPaused(true)} 
+      onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={() => setIsPaused(true)}
+      onTouchEnd={() => { setTimeout(() => setIsPaused(false), 1500) }}
+    >
+      <button 
+        onClick={scrollLeft}
+        className="absolute left-2 top-1/2 -translate-y-1/2 z-10 grid h-10 w-10 place-items-center rounded-full bg-background/95 text-foreground shadow-elevated opacity-100 md:opacity-0 transition-all duration-300 md:group-hover:opacity-100 hover:scale-110 sm:left-4"
+        aria-label="Scroll left"
+      >
+        <ChevronLeft className="h-5 w-5" />
+      </button>
+
+      <div 
+        ref={scrollRef} 
+        className="flex gap-4 overflow-x-auto py-2 scrollbar-none"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
+      >
+        {extendedItems.map((item, i) => renderItem(item, i))}
+      </div>
+
+      <button 
+        onClick={scrollRight}
+        className="absolute right-2 top-1/2 -translate-y-1/2 z-10 grid h-10 w-10 place-items-center rounded-full bg-background/95 text-foreground shadow-elevated opacity-100 md:opacity-0 transition-all duration-300 md:group-hover:opacity-100 hover:scale-110 sm:right-4"
+        aria-label="Scroll right"
+      >
+        <ChevronRight className="h-5 w-5" />
+      </button>
     </div>
   );
 }

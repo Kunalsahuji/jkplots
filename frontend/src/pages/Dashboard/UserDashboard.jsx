@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Home,
   Heart,
@@ -21,7 +22,8 @@ import {
   X,
   FileText,
   Menu,
-  LogOut
+  LogOut,
+  Search
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PropertyCard } from "@/components/site/PropertyCard";
@@ -61,6 +63,19 @@ export default function UserDashboard() {
   const [updatingProfile, setUpdatingProfile] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [chartDays, setChartDays] = useState(30);
+
+  // Listing Pagination & Filters
+  const [listingSearch, setListingSearch] = useState("");
+  const [listingStatus, setListingStatus] = useState("All");
+  const [listingPage, setListingPage] = useState(1);
+  const listingsPerPage = 6;
+  
+  // Enquiries, Saved, Notifications Pagination
+  const [receivedPage, setReceivedPage] = useState(1);
+  const [sentPage, setSentPage] = useState(1);
+  const [savedPage, setSavedPage] = useState(1);
+  const [notificationPage, setNotificationPage] = useState(1);
+  const itemsPerPage = 6;
   
   // Keep activeTab in sync with URL
   useEffect(() => {
@@ -210,9 +225,65 @@ export default function UserDashboard() {
     user?.savedProperties?.some(savedId => (savedId?._id || savedId) === p._id)
   );
 
+  // Dashboard Listings Filtering & Pagination
+  const filteredListings = useMemo(() => {
+    return dbProperties.filter(p => {
+      const matchSearch = p.title?.toLowerCase().includes(listingSearch.toLowerCase()) || p.city?.toLowerCase().includes(listingSearch.toLowerCase());
+      const matchStatus = listingStatus === "All" ? true : listingStatus === "Verified" ? p.verified : !p.verified;
+      return matchSearch && matchStatus;
+    });
+  }, [dbProperties, listingSearch, listingStatus]);
+
+  const paginatedListings = useMemo(() => {
+    const start = (listingPage - 1) * listingsPerPage;
+    return filteredListings.slice(start, start + listingsPerPage);
+  }, [filteredListings, listingPage]);
+  const totalListingPages = Math.ceil(filteredListings.length / listingsPerPage);
+
+  useEffect(() => {
+    setListingPage(1);
+  }, [listingSearch, listingStatus]);
+
+  // Pagination helpers
+  const getPaginated = (arr, page, limit) => arr.slice((page - 1) * limit, page * limit);
+  const getTotalPages = (totalItems, limit) => Math.ceil(totalItems / limit);
+
   // Enquiries categorisation
   const receivedEnquiries = enquiries.filter(e => e.dealerPhone === user?.phone);
   const sentEnquiries = enquiries.filter(e => e.buyerPhone === user?.phone);
+
+  const paginatedReceived = getPaginated(receivedEnquiries, receivedPage, itemsPerPage);
+  const paginatedSent = getPaginated(sentEnquiries, sentPage, itemsPerPage);
+  const paginatedSaved = getPaginated(savedProperties, savedPage, itemsPerPage);
+  const paginatedNotifs = getPaginated(notifications, notificationPage, itemsPerPage);
+
+  const renderPagination = (page, setPage, totalItems) => {
+    const totalPages = getTotalPages(totalItems, itemsPerPage);
+    if (totalPages <= 1) return null;
+    return (
+      <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
+        <p className="text-xs text-muted-foreground">
+          Showing {((page - 1) * itemsPerPage) + 1} to {Math.min(page * itemsPerPage, totalItems)} of {totalItems}
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="h-8 rounded-full border border-border px-3 text-xs font-medium hover:bg-secondary disabled:opacity-50"
+          >
+            Prev
+          </button>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="h-8 rounded-full border border-border px-3 text-xs font-medium hover:bg-secondary disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   const chartData = useMemo(() => {
     const data = [];
@@ -255,7 +326,7 @@ export default function UserDashboard() {
     <div className="bg-secondary/30 min-h-screen">
       <div className="container-px mx-auto grid max-w-7xl gap-8 py-8 lg:grid-cols-[240px_1fr]">
         {/* Sidebar */}
-        <aside className="space-y-4">
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-max">
           <div className="rounded-2xl border border-border bg-card p-4 sm:p-5">
             <div className="flex items-center gap-3">
               <div className="grid h-12 w-12 place-items-center rounded-full bg-gradient-hero font-bold text-primary-foreground shrink-0">
@@ -357,31 +428,32 @@ export default function UserDashboard() {
           </div>
         </aside>
 
-        {/* Main */}
-        <div className="space-y-6 min-w-0">
-          {/* Header row */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h1 className="font-display text-3xl font-bold">
-                Welcome back, {user?.name?.split(' ')[0] || "User"} 👋
-              </h1>
-              <p className="text-muted-foreground text-sm mt-0.5">
-                {isAdmin ? "Moderate system listings and user enquiries" : "Manage your real estate listings, callbacks, and notification center"}
-              </p>
+          {/* Main */}
+          <div className="space-y-6 min-w-0">
+            {/* Header row */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h1 className="font-display text-3xl font-bold">
+                  Welcome back, {user?.name?.split(' ')[0] || "User"} 👋
+                </h1>
+                <p className="text-muted-foreground text-sm mt-0.5">
+                  {isAdmin ? "Moderate system listings and user enquiries" : "Manage your real estate listings, callbacks, and notification center"}
+                </p>
+              </div>
             </div>
-            {isDealer && (
-              <Link
-                to="/post-property"
-                className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-all shadow-md hover:scale-[1.02]"
-              >
-                <Plus className="h-4 w-4" /> Post Property
-              </Link>
-            )}
-          </div>
+            
+            <AnimatePresence mode="wait">
 
           {/* Tab 1: Overview */}
           {activeTab === "Overview" && (
-            <div className="space-y-6">
+            <motion.div
+              key="overview"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6"
+            >
               {/* Stats Grid */}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {stats.map((s) => (
@@ -434,71 +506,137 @@ export default function UserDashboard() {
                   ))}
                 </div>
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Tab 2: My Listings (Dealer / Admin only) */}
           {(activeTab === "My Listings" || activeTab === "All Listings") && (isDealer || isAdmin) && (
-            <div>
-              <div className="mb-4">
-                <h2 className="font-display text-xl font-bold">
-                  {isAdmin ? "All System Listings" : "My Properties"}
-                </h2>
-                <p className="text-xs text-muted-foreground mt-0.5">Edit, delete, and view status of properties</p>
+            <motion.div
+              key="listings"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="font-display text-xl font-bold">
+                    {isAdmin ? "All System Listings" : "My Properties"}
+                  </h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">Edit, delete, and view status of properties</p>
+                </div>
+                {dbProperties.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <input 
+                        type="text" 
+                        placeholder="Search properties..." 
+                        value={listingSearch}
+                        onChange={(e) => setListingSearch(e.target.value)}
+                        className="rounded-full border border-border bg-background py-1.5 pl-9 pr-4 text-xs outline-none focus:border-primary w-[200px]"
+                      />
+                    </div>
+                    <select 
+                      value={listingStatus} 
+                      onChange={(e) => setListingStatus(e.target.value)}
+                      className="rounded-full border border-border bg-background px-3 py-1.5 text-xs outline-none focus:border-primary"
+                    >
+                      <option value="All">All Status</option>
+                      <option value="Verified">Verified</option>
+                      <option value="Unverified">Pending</option>
+                    </select>
+                  </div>
+                )}
               </div>
               {loadingListings ? (
                 <div className="h-40 flex items-center justify-center text-sm text-muted-foreground animate-pulse">
                   Loading listings...
                 </div>
-              ) : dbProperties.length === 0 ? (
+              ) : filteredListings.length === 0 ? (
                 <div className="rounded-3xl border border-dashed border-border bg-card p-12 text-center">
                   <Inbox className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                  <p className="text-sm font-semibold text-foreground">No listings found</p>
-                  <p className="text-xs text-muted-foreground mt-1">Start by posting your first property today.</p>
-                  {isDealer && (
-                    <Link to="/post-property" className="inline-flex items-center gap-1 mt-4 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">
-                      <Plus className="h-3 w-3" /> Post Listing
-                    </Link>
-                  )}
+                  <p className="text-sm font-semibold text-foreground">No matching listings</p>
+                  <p className="text-xs text-muted-foreground mt-1">Try adjusting your filters or search.</p>
+                  <button onClick={() => {setListingSearch(""); setListingStatus("All");}} className="mt-4 text-xs font-semibold text-primary hover:underline">Reset Filters</button>
                 </div>
               ) : (
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  {dbProperties.map((p) => (
-                    <div key={p._id} className="relative group">
-                      <PropertyCard p={p} />
-                      <div className="absolute right-3 bottom-3 z-10 flex gap-2">
-                        <Link
-                          to={`/edit-property/${p._id}`}
-                          className="flex h-9 w-9 items-center justify-center rounded-xl bg-card text-foreground border border-border shadow-soft transition hover:bg-secondary hover:scale-105"
-                          title="Edit listing"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Link>
+                <>
+                  <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                    {paginatedListings.map((p) => (
+                      <div key={p._id} className="relative group">
+                        <PropertyCard p={p} />
+                        <div className="absolute right-3 bottom-3 z-10 flex gap-2">
+                          <Link
+                            to={`/edit-property/${p._id}`}
+                            className="flex h-9 w-9 items-center justify-center rounded-xl bg-card text-foreground border border-border shadow-soft transition hover:bg-secondary hover:scale-105"
+                            title="Edit listing"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Link>
+                          <button
+                            onClick={() => handleDeleteProperty(p._id)}
+                            className="flex h-9 w-9 items-center justify-center rounded-xl bg-destructive text-destructive-foreground shadow-soft transition hover:bg-destructive/90 hover:scale-105"
+                            title="Delete listing"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {totalListingPages > 1 && (
+                    <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
+                      <p className="text-xs text-muted-foreground">
+                        Showing {((listingPage - 1) * listingsPerPage) + 1} to {Math.min(listingPage * listingsPerPage, filteredListings.length)} of {filteredListings.length}
+                      </p>
+                      <div className="flex gap-2">
                         <button
-                          onClick={() => handleDeleteProperty(p._id)}
-                          className="flex h-9 w-9 items-center justify-center rounded-xl bg-destructive text-destructive-foreground shadow-soft transition hover:bg-destructive/90 hover:scale-105"
-                          title="Delete listing"
+                          onClick={() => setListingPage(p => Math.max(1, p - 1))}
+                          disabled={listingPage === 1}
+                          className="h-8 rounded-full border border-border px-3 text-xs font-medium hover:bg-secondary disabled:opacity-50"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          Prev
+                        </button>
+                        <button
+                          onClick={() => setListingPage(p => Math.min(totalListingPages, p + 1))}
+                          disabled={listingPage === totalListingPages}
+                          className="h-8 rounded-full border border-border px-3 text-xs font-medium hover:bg-secondary disabled:opacity-50"
+                        >
+                          Next
                         </button>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               )}
-            </div>
+            </motion.div>
           )}
 
           {/* Tab 3: Promote Property (Dealer only) */}
           {activeTab === "Promote Property" && isDealer && (
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <motion.div
+              key="promote"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
               <PromotePropertyTab properties={dbProperties} refreshData={refreshUser} />
-            </div>
+            </motion.div>
           )}
 
           {/* Tab 4: Enquiries (Received and Sent) */}
           {activeTab === "Enquiries" && (
-            <div className="space-y-6">
+            <motion.div
+              key="enquiries"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6"
+            >
               <div>
                 <h2 className="font-display text-xl font-bold">Callback & Property Enquiries</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">Manage messages, status tracking, and callbacks</p>
@@ -531,7 +669,7 @@ export default function UserDashboard() {
                               </tr>
                             </thead>
                             <tbody>
-                              {receivedEnquiries.map((e) => (
+                              {paginatedReceived.map((e) => (
                                 <tr key={e._id} className="border-b border-secondary hover:bg-secondary/20 transition-colors">
                                   <td className="py-4 pr-4 font-semibold">
                                     {e.property ? (
@@ -581,6 +719,7 @@ export default function UserDashboard() {
                           </table>
                         </div>
                       )}
+                      {renderPagination(receivedPage, setReceivedPage, receivedEnquiries.length)}
                     </div>
                   )}
 
@@ -600,7 +739,7 @@ export default function UserDashboard() {
                       </div>
                     ) : (
                       <div className="grid gap-4 sm:grid-cols-2">
-                        {sentEnquiries.map((e) => (
+                        {paginatedSent.map((e) => (
                           <div key={e._id} className="rounded-xl border border-border bg-secondary/35 p-4 space-y-3">
                             <div className="flex justify-between items-start gap-2">
                               <div>
@@ -638,15 +777,22 @@ export default function UserDashboard() {
                         ))}
                       </div>
                     )}
+                    {renderPagination(sentPage, setSentPage, sentEnquiries.length)}
                   </div>
                 </div>
               )}
-            </div>
+            </motion.div>
           )}
 
-          {/* Tab 4: Saved Properties */}
+          {/* Tab 5: Saved Properties */}
           {activeTab === "Saved" && (
-            <div>
+            <motion.div
+              key="saved"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
               <div className="mb-4">
                 <h2 className="font-display text-xl font-bold">Saved Properties</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">Your shortlisted properties</p>
@@ -661,18 +807,28 @@ export default function UserDashboard() {
                   </Link>
                 </div>
               ) : (
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  {savedProperties.map((p) => (
-                    <PropertyCard key={p._id || p.id} p={p} />
-                  ))}
-                </div>
+                <>
+                  <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                    {paginatedSaved.map((p) => (
+                      <PropertyCard key={p._id || p.id} p={p} />
+                    ))}
+                  </div>
+                  {renderPagination(savedPage, setSavedPage, savedProperties.length)}
+                </>
               )}
-            </div>
+            </motion.div>
           )}
 
           {/* Tab 5: Notifications */}
           {activeTab === "Notifications" && (
-            <div className="space-y-6">
+            <motion.div
+              key="notifications"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6"
+            >
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="font-display text-xl font-bold">Notification Center</h2>
@@ -699,51 +855,61 @@ export default function UserDashboard() {
                   <p className="text-xs text-muted-foreground mt-1">We will alert you here when callbacks are requested.</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {notifications.map((n) => (
-                    <div
-                      key={n._id}
-                      className={`flex gap-3 rounded-2xl border p-4 shadow-sm transition-colors ${
-                        n.read
-                          ? 'border-border bg-card/75 opacity-75'
-                          : 'border-primary/20 bg-primary-soft/30'
-                      }`}
-                    >
-                      <div className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${
-                        n.read ? 'bg-secondary text-muted-foreground' : 'bg-primary text-primary-foreground'
-                      }`}>
-                        <Bell className="h-4 w-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-3">
-                          <h4 className={`text-sm font-semibold truncate ${n.read ? 'text-foreground/85' : 'text-foreground'}`}>
-                            {n.title}
-                          </h4>
-                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                            {new Date(n.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                          {n.message}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleDeleteNotification(n._id)}
-                        className="text-muted-foreground hover:text-destructive transition-colors"
-                        title="Remove Notification"
+                <>
+                  <div className="space-y-3">
+                    {paginatedNotifs.map((n) => (
+                      <div
+                        key={n._id}
+                        className={`flex gap-3 rounded-2xl border p-4 shadow-sm transition-colors ${
+                          n.read
+                            ? 'border-border bg-card/75 opacity-75'
+                            : 'border-primary/20 bg-primary-soft/30'
+                        }`}
                       >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                        <div className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${
+                          n.read ? 'bg-secondary text-muted-foreground' : 'bg-primary text-primary-foreground'
+                        }`}>
+                          <Bell className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-3">
+                            <h4 className={`text-sm font-semibold truncate ${n.read ? 'text-foreground/85' : 'text-foreground'}`}>
+                              {n.title}
+                            </h4>
+                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                              {new Date(n.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                            {n.message}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteNotification(n._id)}
+                          className="text-muted-foreground hover:text-destructive transition-colors"
+                          title="Remove Notification"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {renderPagination(notificationPage, setNotificationPage, notifications.length)}
+                </>
               )}
-            </div>
+            </motion.div>
           )}
 
           {/* Tab 6: Subscription */}
           {activeTab === "Subscription" && (
-            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm space-y-6">
+            <motion.div
+              key="subscription"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+              className="rounded-2xl border border-border bg-card p-6 shadow-sm space-y-6"
+            >
               <div>
                 <h2 className="font-display text-xl font-bold">Premium Subscription</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">Manage billing details and system membership limits</p>
@@ -775,12 +941,19 @@ export default function UserDashboard() {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Tab 7: Settings */}
           {activeTab === "Settings" && (
-            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm space-y-6">
+            <motion.div
+              key="settings"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+              className="rounded-2xl border border-border bg-card p-6 shadow-sm space-y-6"
+            >
               <div>
                 <h2 className="font-display text-xl font-bold">Account Settings</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">Manage user preferences and contact numbers</p>
@@ -842,8 +1015,10 @@ export default function UserDashboard() {
               </form>
 
               {isDealer && <KycSection />}
-            </div>
+            </motion.div>
           )}
+
+          </AnimatePresence>
         </div>
       </div>
     </div>

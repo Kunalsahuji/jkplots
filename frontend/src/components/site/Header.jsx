@@ -60,6 +60,13 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {showPostProperty && (
+            <Link to="/post-property" className="hidden sm:inline-flex">
+              <Button className="gap-1.5 rounded-full bg-foreground text-background hover:bg-foreground/90">
+                <Plus className="h-4 w-4" /> Post Property <span className="ml-1 rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-accent-foreground">FREE</span>
+              </Button>
+            </Link>
+          )}
           {isAuthenticated ? (
             <>
               <Link 
@@ -81,13 +88,6 @@ export function Header() {
               className="hidden text-sm font-medium text-muted-foreground hover:text-foreground sm:inline"
             >
               Sign in
-            </Link>
-          )}
-          {showPostProperty && (
-            <Link to="/post-property" className="hidden sm:inline-flex">
-              <Button className="gap-1.5 rounded-full bg-foreground text-background hover:bg-foreground/90">
-                <Plus className="h-4 w-4" /> Post Property <span className="ml-1 rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-accent-foreground">FREE</span>
-              </Button>
             </Link>
           )}
           <button

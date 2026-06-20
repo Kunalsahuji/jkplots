@@ -13,7 +13,7 @@ const cityOpts = ["All", "Srinagar", "Jammu", "Gulmarg", "Pahalgam", "Anantnag",
 const bedroomOpts = ["Any", "1+", "2+", "3+", "4+"];
 
 export default function PropertyListPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [view, setView] = useState("grid");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -49,14 +49,24 @@ export default function PropertyListPage() {
   }, [purpose, type, typeOpts]);
 
   useEffect(() => {
-    const cityParam = searchParams.get("city");
-    const purposeParam = searchParams.get("purpose");
-    const typeParam = searchParams.get("type");
+    const cityParam = searchParams.get("city") || "All";
+    const purposeParam = searchParams.get("purpose") || "All";
+    const typeParam = searchParams.get("type") || "All";
 
-    if (cityParam && cityParam !== "All") setCity(cityParam);
-    if (purposeParam && purposeParam !== "All") setPurpose(purposeParam);
-    if (typeParam && typeParam !== "Any" && typeParam !== "All") setType(typeParam);
+    setCity(cityParam);
+    setPurpose(purposeParam);
+    setType(typeParam);
   }, [searchParams]);
+
+  const handleFilterChange = (key, value) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (value === "All" || value === "Any") {
+      newParams.delete(key);
+    } else {
+      newParams.set(key, value);
+    }
+    setSearchParams(newParams, { replace: true });
+  };
 
   // Reset to first page when any search parameter or filter changes
   useEffect(() => {
@@ -112,9 +122,7 @@ export default function PropertyListPage() {
   }, [dbProperties, verifiedOnly, furnished]);
 
   const handleReset = () => {
-    setCity("All");
-    setType("All");
-    setPurpose("All");
+    setSearchParams(new URLSearchParams(), { replace: true });
     setBeds("Any");
     setBudget(50000000);
     setVerifiedOnly(false);
@@ -125,13 +133,13 @@ export default function PropertyListPage() {
   const Filters = (
     <div className="space-y-6">
       <FilterGroup label="Purpose">
-        <Chips opts={["All", "Buy", "Rent", "Commercial"]} value={purpose} onChange={setPurpose} />
+        <Chips opts={["All", "Buy", "Rent", "Commercial"]} value={purpose} onChange={(v) => handleFilterChange("purpose", v)} />
       </FilterGroup>
       <FilterGroup label="City">
-        <Chips opts={cityOpts} value={city} onChange={setCity} />
+        <Chips opts={cityOpts} value={city} onChange={(v) => handleFilterChange("city", v)} />
       </FilterGroup>
       <FilterGroup label="Property type">
-        <Chips opts={typeOpts} value={type} onChange={setType} />
+        <Chips opts={typeOpts} value={type} onChange={(v) => handleFilterChange("type", v)} />
       </FilterGroup>
       <FilterGroup label="Bedrooms">
         <Chips opts={bedroomOpts} value={beds} onChange={setBeds} />
@@ -164,7 +172,7 @@ export default function PropertyListPage() {
       className="bg-secondary/30"
     >
       <div className="border-b border-border bg-background">
-        <div className="container-px mx-auto max-w-7xl py-6">
+        <div className="container-px mx-auto max-w-4xl py-3">
           <SearchBar compact />
         </div>
       </div>
@@ -189,7 +197,7 @@ export default function PropertyListPage() {
             <div>
               <h1 className="font-display text-2xl font-bold">Properties in J&amp;K</h1>
               <p className="text-sm text-muted-foreground">
-                {isLoading ? "Loading..." : `${filtered.length} listings this page`}
+                {isLoading ? "Loading..." : propertiesData?.total ? `${propertiesData.total} properties match your search` : `${filtered.length} properties found`}
               </p>
             </div>
             <div className="flex items-center gap-2">

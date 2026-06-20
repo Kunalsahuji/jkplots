@@ -10,9 +10,16 @@ export function SearchBar({ compact = false }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   
-  const [purpose, setPurpose] = useState(searchParams.get("purpose") || "Buy");
+  const [purpose, setPurpose] = useState(searchParams.get("purpose") || "All");
   const [city, setCity] = useState(searchParams.get("city") || "All");
   const [type, setType] = useState(searchParams.get("type") || "All");
+
+  useEffect(() => {
+    setPurpose(searchParams.get("purpose") || "All");
+    setCity(searchParams.get("city") || "All");
+    setType(searchParams.get("type") || "All");
+    setSearchQuery(searchParams.get("search") || "");
+  }, [searchParams]);
   
   // Global Search State
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
@@ -84,8 +91,11 @@ export function SearchBar({ compact = false }) {
     navigate(`/properties?${params.toString()}`);
   };
 
+  const inputPadding = compact ? "px-4 py-2" : "px-4 py-3";
+  const btnSize = compact ? "min-h-[48px] px-5 py-2 text-sm" : "min-h-[56px] px-6 py-4 text-base";
+
   return (
-    <div className={`w-full ${compact ? "" : "rounded-3xl bg-background/95 p-2 shadow-elevated backdrop-blur-xl"}`}>
+    <div className={`w-full ${compact ? "rounded-2xl border border-border bg-card shadow-sm p-1.5 transition-all" : "rounded-3xl bg-background/95 p-2 shadow-elevated backdrop-blur-xl"}`}>
       {!compact && (
         <div className="mb-2 flex gap-1 px-2 pt-2">
           {purposes.map((p) => (
@@ -106,7 +116,7 @@ export function SearchBar({ compact = false }) {
         
         {/* Global Search Input */}
         <div ref={wrapperRef} className="relative">
-          <label className="flex items-center gap-2 rounded-2xl border border-border bg-background px-4 py-3 focus-within:border-primary md:border-0 h-full">
+          <label className={`flex items-center gap-2 rounded-xl border border-border bg-background ${inputPadding} focus-within:border-primary md:border-0 h-full`}>
             <SearchIcon className="h-4 w-4 text-muted-foreground" />
             <div className="flex-1">
               <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Search</div>
@@ -151,7 +161,7 @@ export function SearchBar({ compact = false }) {
           )}
         </div>
 
-        <label className="flex items-center gap-2 rounded-2xl border border-border bg-background px-4 py-3 focus-within:border-primary md:border-0 md:border-l">
+        <label className={`flex items-center gap-2 rounded-xl border border-border bg-background ${inputPadding} focus-within:border-primary md:border-0 md:border-l`}>
           <MapPin className="h-4 w-4 text-muted-foreground" />
           <div className="flex-1">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">City</div>
@@ -167,7 +177,7 @@ export function SearchBar({ compact = false }) {
           </div>
         </label>
 
-        <label className="flex items-center gap-2 rounded-2xl border border-border bg-background px-4 py-3 focus-within:border-primary md:border-0 md:border-l">
+        <label className={`flex items-center gap-2 rounded-xl border border-border bg-background ${inputPadding} focus-within:border-primary md:border-0 md:border-l`}>
           <Building2 className="h-4 w-4 text-muted-foreground" />
           <div className="flex-1">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Property Type</div>
@@ -184,9 +194,8 @@ export function SearchBar({ compact = false }) {
         </label>
 
         <Button
-          size="lg"
           onClick={handleSearch}
-          className="h-full min-h-[56px] gap-2 rounded-2xl bg-primary px-6 py-4 text-base font-semibold shadow-soft hover:bg-primary/90"
+          className={`h-full gap-2 rounded-xl bg-primary font-semibold shadow-soft hover:bg-primary/90 ${btnSize}`}
         >
           <Search className="h-4 w-4" /> Search
         </Button>
