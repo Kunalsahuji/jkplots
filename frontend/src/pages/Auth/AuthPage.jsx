@@ -186,10 +186,10 @@ export default function AuthPage() {
             <div className="mx-auto w-full max-w-md">
                 <div className="mb-4 text-left">
                     <Link
-                        to="/"
+                        to={searchParams.get('redirect') || "/"}
                         className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground transition hover:text-primary"
                     >
-                        <ArrowLeft className="h-4 w-4" /> Back to Home
+                        <ArrowLeft className="h-4 w-4" /> {searchParams.get('redirect') ? "Back" : "Back to Home"}
                     </Link>
                 </div>
 

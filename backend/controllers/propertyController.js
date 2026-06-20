@@ -376,8 +376,16 @@ exports.addPropertyReview = async (req, res, next) => {
             return next(new ErrorResponse(`Property not found with id of ${req.params.id}`, 404));
         }
 
+        const userName = req.user.name || 'Anonymous User';
+
+        // Check if user already reviewed
+        const existingReview = property.reviews?.find(r => r.userName === userName);
+        if (existingReview) {
+            return next(new ErrorResponse('You have already submitted a review for this property', 400));
+        }
+
         const review = {
-            userName: req.user.name || 'Anonymous User',
+            userName: userName,
             rating: Number(rating),
             comment: comment || '',
             createdAt: new Date()

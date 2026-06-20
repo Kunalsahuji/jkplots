@@ -1,4 +1,4 @@
-import { useParams, Link, Navigate } from "react-router-dom";
+import { useParams, Link, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { PropertyCard } from "@/components/site/PropertyCard";
 import {
   Bed,
@@ -27,6 +27,8 @@ import {
   User,
   Shield,
   Eye,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -88,6 +90,8 @@ function PropertyDetailSkeleton() {
 
 export default function PropertyDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAuthenticated, refreshUser } = useAuth();
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -103,6 +107,9 @@ export default function PropertyDetailPage() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [editingReviewId, setEditingReviewId] = useState(null);
 
+  const userExistingReview = reviewsList.find((r) => r.userName === user?.name);
+  const showReviewForm = !userExistingReview || editingReviewId;
+
   // Saved status check
   const isSaved = user?.savedProperties?.some(
     (savedId) => (savedId?._id || savedId) === (property?._id || property?.id)
@@ -112,7 +119,8 @@ export default function PropertyDetailPage() {
     if (!isAuthenticated || !user) {
       toast.error(`Please login first to ${actionName}. Redirecting to login...`);
       setTimeout(() => {
-        window.location.href = "/auth";
+        const redirectPath = `${location.pathname}${location.search}`;
+        navigate(`/auth?redirect=${encodeURIComponent(redirectPath)}`);
       }, 1500);
       return false;
     }
@@ -757,18 +765,18 @@ export default function PropertyDetailPage() {
                             })}
                           </span>
                           {(r.userName === user?.name || user?.role === 'admin') && (
-                            <div className="flex gap-1.5 ml-2 border-l border-border/80 pl-2">
+                            <div className="flex gap-1.5 ml-3 border-l border-border/80 pl-3">
                               <button
                                 onClick={() => startEditReview(r)}
-                                className="text-[10px] text-primary hover:underline font-bold"
+                                className="flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors"
                               >
-                                Edit
+                                <Pencil className="h-3 w-3" /> Edit
                               </button>
                               <button
                                 onClick={() => handleReviewDelete(r._id)}
-                                className="text-[10px] text-destructive hover:underline font-bold"
+                                className="flex items-center gap-1 rounded-md bg-destructive/10 px-2 py-1 text-[10px] font-bold text-destructive hover:bg-destructive/20 transition-colors"
                               >
-                                Delete
+                                <Trash2 className="h-3 w-3" /> Delete
                               </button>
                             </div>
                           )}
@@ -786,14 +794,16 @@ export default function PropertyDetailPage() {
 
               {/* Add/Edit Review Form */}
               <div id="review-form-section" className="border-t border-border pt-6 space-y-4">
-                <h3 className="text-sm font-bold text-foreground">
-                  {editingReviewId ? "Edit Your Review" : "Write a Review"}
-                </h3>
                 {isAuthenticated ? (
-                  <form onSubmit={handleReviewSubmit} className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-muted-foreground">Your Rating:</span>
-                      <div className="flex gap-1">
+                  showReviewForm ? (
+                    <>
+                      <h3 className="text-sm font-bold text-foreground">
+                        {editingReviewId ? "Edit Your Review" : "Write a Review"}
+                      </h3>
+                      <form onSubmit={handleReviewSubmit} className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-muted-foreground">Your Rating:</span>
+                          <div className="flex gap-1">
                         {[1, 2, 3, 4, 5].map((stars) => (
                           <button
                             key={stars}
@@ -842,6 +852,14 @@ export default function PropertyDetailPage() {
                       )}
                     </div>
                   </form>
+                  </>
+                  ) : (
+                    <div className="rounded-xl bg-success/10 border border-success/20 p-4 text-center">
+                      <p className="text-sm text-success font-semibold">
+                        You have already submitted a review for this property. Thank you!
+                      </p>
+                    </div>
+                  )
                 ) : (
                   <div className="rounded-xl bg-secondary/20 p-4 text-center">
                     <p className="text-xs text-muted-foreground mb-3">
