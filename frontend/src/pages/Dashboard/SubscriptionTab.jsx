@@ -137,18 +137,18 @@ export default function SubscriptionTab() {
             <div className="space-y-2 pt-2">
               <div className="flex justify-between text-xs">
                 <span>Listings Published</span>
-                <span className="font-semibold">{usage.used} / {usage.limit >= 999999 ? 'Unlimited' : usage.limit}</span>
+                <span className="font-semibold">{usage.used} / {usage.limit}</span>
               </div>
               <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
                 <div 
-                  className={`h-full rounded-full ${usage.limit >= 999999 ? 'bg-primary' : usagePercent >= 100 ? 'bg-destructive' : usagePercent >= 80 ? 'bg-amber-500' : 'bg-primary'}`} 
-                  style={{ width: `${usage.limit >= 999999 ? 100 : usagePercent}%` }} 
+                  className={`h-full rounded-full ${usagePercent >= 100 ? 'bg-destructive' : usagePercent >= 80 ? 'bg-amber-500' : 'bg-primary'}`} 
+                  style={{ width: `${usagePercent}%` }} 
                 />
               </div>
               <div className="flex justify-between text-xs pt-1">
                 <span>Remaining Credits</span>
-                <span className={`font-semibold ${usage.limit >= 999999 ? 'text-emerald-600' : usage.remaining === 0 ? 'text-destructive' : 'text-emerald-600'}`}>
-                  {usage.limit >= 999999 ? 'Unlimited' : usage.remaining}
+                <span className={`font-semibold ${usage.remaining === 0 ? 'text-destructive' : 'text-emerald-600'}`}>
+                  {usage.remaining}
                 </span>
               </div>
             </div>

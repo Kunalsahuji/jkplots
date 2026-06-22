@@ -74,14 +74,11 @@ exports.getMySubscription = async (req, res) => {
         let config = await SystemConfig.findOne();
         if (!config) config = { isSubscriptionEnforced: false, freeListingLimit: 50 };
 
-        if (!config.isSubscriptionEnforced) {
-            totalLimit = 999999; // Unlimited if not enforced
-        } else if (user.activeSubscription && user.activeSubscription.status === 'active' && user.activeSubscription.endDate > new Date()) {
-            totalLimit = user.activeSubscription.plan?.listingLimit || 0;
+        totalLimit = config.freeListingLimit;
+
+        if (user.activeSubscription && user.activeSubscription.status === 'active' && user.activeSubscription.endDate > new Date()) {
+            totalLimit = Math.max(config.freeListingLimit, user.activeSubscription.plan?.listingLimit || 0);
             planDetails = user.activeSubscription;
-        } else {
-            // Default free tier limit
-            totalLimit = config.freeListingLimit;
         }
 
         res.status(200).json({

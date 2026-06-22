@@ -246,10 +246,9 @@ exports.createProperty = async (req, res, next) => {
 
         let totalLimit = config.freeListingLimit; // Default Free limit from DB
 
-        if (!config.isSubscriptionEnforced) {
-            totalLimit = 999999; // Unlimited if subscriptions are off globally
-        } else if (userObj.activeSubscription && userObj.activeSubscription.status === 'active' && userObj.activeSubscription.endDate > new Date()) {
-            totalLimit = userObj.activeSubscription.plan?.listingLimit || 0;
+        if (userObj.activeSubscription && userObj.activeSubscription.status === 'active' && userObj.activeSubscription.endDate > new Date()) {
+            // Give them whichever limit is higher: the free tier or their paid plan limit
+            totalLimit = Math.max(config.freeListingLimit, userObj.activeSubscription.plan?.listingLimit || 0);
         }
 
         const activeCount = await Property.countDocuments({ dealer: req.user._id });
@@ -562,17 +561,48 @@ exports.togglePropertyVerify = async (req, res, next) => {
 // @access  Private (Admin/Superadmin)
 exports.togglePropertyFeature = async (req, res, next) => {
     try {
-        let property = await Property.findById(req.params.id);
+        const property = await Property.findById(req.params.id);
         if (!property) {
             return next(new ErrorResponse(`Property not found`, 404));
         }
 
-        property.featured = !property.featured;
-        await property.save({ validateBeforeSave: false });
+        const { days } = req.body || {};
+        let updateQuery = {};
+
+        if (days) {
+            // Manual activation with specific days
+            updateQuery = {
+                $set: {
+                    isFeatured: true,
+                    featuredUntil: new Date(Date.now() + Number(days) * 24 * 60 * 60 * 1000)
+                }
+            };
+        } else {
+            // Toggle logic
+            if (property.isFeatured) {
+                updateQuery = {
+                    $set: { isFeatured: false },
+                    $unset: { featuredUntil: 1 }
+                };
+            } else {
+                updateQuery = {
+                    $set: {
+                        isFeatured: true,
+                        featuredUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                    }
+                };
+            }
+        }
+
+        const updatedProperty = await Property.findByIdAndUpdate(
+            req.params.id,
+            updateQuery,
+            { new: true }
+        );
 
         res.status(200).json({
             success: true,
-            data: property
+            data: updatedProperty
         });
     } catch (err) {
         next(err);

@@ -36,6 +36,7 @@ export default function AdminPropertiesPage() {
   const [verificationFilter, setVerificationFilter] = useState("all");
   const [featuredFilter, setFeaturedFilter] = useState("all");
   const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [featureModal, setFeatureModal] = useState({ isOpen: false, property: null, days: 30 });
 
   // Pagination & Sorting states
   const [currentPage, setCurrentPage] = useState(1);
@@ -143,19 +144,42 @@ export default function AdminPropertiesPage() {
   };
 
   const toggleFeaturedProperty = async (prop) => {
+    if (prop.featured) {
+      // Un-feature immediately
+      setActionLoadingId(prop._id);
+      try {
+        const { data } = await api.put(`/properties/${prop._id}/feature`);
+        if (data.success) {
+          setProperties(prev => prev.map(p => p._id === prop._id ? { ...p, featured: false } : p));
+          setSelectedProperty(prev => (prev?._id === prop._id ? { ...prev, featured: false } : prev));
+          toast.success("Property removed from Featured list!");
+        }
+      } catch (err) {
+        toast.error("Failed to un-feature property.");
+      } finally {
+        setActionLoadingId(null);
+      }
+    } else {
+      // Open modal to ask for days
+      setFeatureModal({ isOpen: true, property: prop, days: 30 });
+    }
+  };
+
+  const confirmFeatureProperty = async () => {
+    const prop = featureModal.property;
     setActionLoadingId(prop._id);
     try {
-      const updatedFeatured = !prop.featured;
-      const { data } = await api.put(`/properties/${prop._id}/feature`);
+      const { data } = await api.put(`/properties/${prop._id}/feature`, { days: featureModal.days });
       if (data.success) {
-        setProperties(prev => prev.map(p => p._id === prop._id ? { ...p, featured: updatedFeatured } : p));
-        setSelectedProperty(prev => (prev?._id === prop._id ? { ...prev, featured: updatedFeatured } : prev));
-        toast.success(`Property set as ${updatedFeatured ? "Featured" : "Regular"}!`);
+        setProperties(prev => prev.map(p => p._id === prop._id ? { ...p, featured: true } : p));
+        setSelectedProperty(prev => (prev?._id === prop._id ? { ...prev, featured: true } : prev));
+        toast.success(`Property Featured for ${featureModal.days} days!`);
       }
     } catch (err) {
-      toast.error("Failed to toggle featured state.");
+      toast.error("Failed to feature property.");
     } finally {
       setActionLoadingId(null);
+      setFeatureModal({ isOpen: false, property: null, days: 30 });
     }
   };
 
@@ -727,6 +751,48 @@ export default function AdminPropertiesPage() {
         title={confirmDialog.title}
         message={confirmDialog.message}
       />
+
+      {featureModal.isOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-xl animate-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Feature Property</h3>
+              <p className="text-sm text-slate-500 mb-6">
+                How many days should this property remain featured on the homepage and top of search results?
+              </p>
+              
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Duration (Days)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="365"
+                  value={featureModal.days}
+                  onChange={(e) => setFeatureModal({ ...featureModal, days: Number(e.target.value) })}
+                  className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all font-semibold"
+                />
+              </div>
+
+              <div className="mt-8 flex gap-3">
+                <button
+                  onClick={() => setFeatureModal({ isOpen: false, property: null, days: 30 })}
+                  className="flex-1 bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold py-3 rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmFeatureProperty}
+                  disabled={actionLoadingId === featureModal.property?._id}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-600/20 transition disabled:opacity-50 flex justify-center items-center gap-2"
+                >
+                  {actionLoadingId === featureModal.property?._id && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
