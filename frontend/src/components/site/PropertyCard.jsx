@@ -59,7 +59,7 @@ export function PropertyCard({ p }) {
   return (
     <Link
       to={`/properties/${id}`}
-      className={`group block overflow-hidden rounded-2xl border transition-all duration-300 ${
+      className={`group flex flex-col h-full overflow-hidden rounded-2xl border transition-all duration-300 ${
         isFeatured
           ? "border-amber-400 bg-gradient-to-b from-card to-amber-50/10 dark:to-amber-950/5 shadow-[0_4px_20px_rgba(245,158,11,0.08)] hover:-translate-y-1.5 hover:shadow-[0_12px_24px_rgba(245,158,11,0.18)]"
           : "border-border bg-card hover:-translate-y-1 hover:shadow-md"
@@ -94,28 +94,31 @@ export function PropertyCard({ p }) {
         </button>
       </div>
 
-      <div className="space-y-2 p-4">
+      <div className="space-y-2 p-4 flex-1 flex flex-col">
         <h3 className="line-clamp-1 font-display text-sm font-semibold leading-tight text-foreground/90 group-hover:text-primary transition-colors">
           {title}
         </h3>
         <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
           <MapPin className="h-3.5 w-3.5 text-muted-foreground/70" /> <span className="line-clamp-1">{area}, {city}</span>
         </p>
-        <div className="flex items-end justify-between pt-1 border-t border-border/60">
-          <div className={`font-display text-base font-extrabold ${isFeatured ? "text-amber-600 dark:text-amber-400" : "text-primary"}`}>
+        <div className="flex items-center justify-between gap-1.5 pt-2 mt-auto border-t border-border/60">
+          <div className={`font-display text-[15px] whitespace-nowrap font-extrabold ${isFeatured ? "text-amber-600 dark:text-amber-400" : "text-primary"}`}>
             {priceLabel}
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 min-w-0 justify-end">
             {p.views !== undefined && (
-               <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium bg-secondary/80 px-2 py-0.5 rounded-md" title={`${p.views} Views`}>
-                 <Eye className="h-3.5 w-3.5" /> {p.views}
+               <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium bg-secondary/80 px-1.5 py-0.5 rounded-md shrink-0" title={`${p.views} Views`}>
+                 <Eye className="h-3 w-3" /> {p.views}
                </span>
             )}
-            <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
-              isFeatured 
-                ? "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
-                : "bg-primary-soft text-primary"
-            }`}>
+            <span 
+              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap truncate max-w-[90px] sm:max-w-[110px] ${
+                isFeatured 
+                  ? "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                  : "bg-primary-soft text-primary"
+              }`}
+              title={type}
+            >
               {type}
             </span>
           </div>

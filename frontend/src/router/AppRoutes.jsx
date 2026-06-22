@@ -3,7 +3,15 @@ import { Header, MobileTabBar } from '@/components/site/Header';
 import { Footer } from '@/components/site/Footer';
 import { Toaster } from '@/components/ui/sonner';
 import { useAuth } from '@/context/AuthContext';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
+
+function ScrollToTop() {
+  const { pathname, search } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname, search]);
+  return null;
+}
 
 // Skeletons
 import { 
@@ -95,9 +103,10 @@ function AdminProtectedRoute({ children }) {
 // ─── App Layout ───────────────────────────────────────────────────────────────
 function AppLayout() {
     return (
-        <div className="flex min-h-screen flex-col">
+        <div className="flex min-h-screen flex-col pb-20 lg:pb-0">
+            <ScrollToTop />
             <Header />
-            <main className="flex-1 pb-20 lg:pb-0">
+            <main className="flex-1">
                 <Outlet />
             </main>
             <Footer />

@@ -184,8 +184,10 @@ export default function PromotePropertyTab({ properties, refreshData }) {
             {promotedProperties.map((property) => {
               const daysLeft = Math.ceil((new Date(property.featuredUntil) - new Date()) / (1000 * 60 * 60 * 24));
               return (
-                <div key={property._id} className="relative group rounded-2xl overflow-hidden shadow-soft border border-yellow-200">
-                  <PropertyCard p={property} />
+                <div key={property._id} className="relative group flex flex-col h-full rounded-2xl overflow-hidden shadow-soft border border-yellow-200">
+                  <div className="flex-1 flex flex-col">
+                    <PropertyCard p={property} />
+                  </div>
                   <div className="absolute top-3 left-3 bg-gradient-to-r from-yellow-400 to-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1">
                     <Sparkles size={14} /> Promoted (Expires in {daysLeft} days)
                   </div>
@@ -250,7 +252,9 @@ export default function PromotePropertyTab({ properties, refreshData }) {
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {paginatedNormal.map((property) => (
                 <div key={property._id} className="relative flex flex-col h-full">
-                  <PropertyCard p={property} />
+                  <div className="flex-1 flex flex-col">
+                    <PropertyCard p={property} />
+                  </div>
                   <button
                     onClick={() => handleBoostClick(property)}
                     className="mt-3 w-full bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all shadow-sm"

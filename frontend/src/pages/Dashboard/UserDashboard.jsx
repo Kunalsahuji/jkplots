@@ -594,8 +594,10 @@ export default function UserDashboard() {
                 <>
                   <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                     {paginatedListings.map((p) => (
-                      <div key={p._id} className="relative group">
-                        <PropertyCard p={p} />
+                      <div key={p._id} className="relative group flex flex-col h-full">
+                        <div className="flex-1 flex flex-col">
+                          <PropertyCard p={p} />
+                        </div>
                         <div className="absolute right-3 bottom-3 z-10 flex gap-2">
                           <Link
                             to={`/edit-property/${p._id}`}
