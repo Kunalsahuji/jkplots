@@ -71,6 +71,12 @@ const UserSchema = new mongoose.Schema(
             enum: ['unverified', 'pending', 'approved', 'rejected'],
             default: 'unverified',
         },
+        activeSubscription: {
+            plan: { type: mongoose.Schema.Types.ObjectId, ref: 'SubscriptionPlan' },
+            startDate: { type: Date },
+            endDate: { type: Date },
+            status: { type: String, enum: ['active', 'expired', 'none'], default: 'none' }
+        },
     },
     {
         timestamps: true,

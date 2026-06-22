@@ -303,10 +303,12 @@ export default function PromotePropertyTab({ properties, refreshData }) {
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
             
-            <div className="p-8">
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-display font-bold text-slate-900">Choose a Promotion Plan</h2>
-                <p className="text-muted-foreground mt-2">Boost "{selectedProperty?.title}" and get premium visibility.</p>
+            <div className="p-8 md:p-10">
+              <div className="mb-8 text-center max-w-2xl mx-auto">
+                <h2 className="text-3xl font-black text-slate-900 font-display">Select a Promotion Plan</h2>
+                <p className="text-slate-500 mt-3 text-sm">
+                  Supercharge your property's visibility. Promoted properties get up to <span className="font-bold text-slate-900">10x more views</span> and leads.
+                </p>
               </div>
 
               {loading ? (
@@ -314,50 +316,77 @@ export default function PromotePropertyTab({ properties, refreshData }) {
                   <Loader2 className="animate-spin text-primary h-8 w-8" />
                 </div>
               ) : plans.length === 0 ? (
-                <div className="text-center p-8 bg-gray-50 rounded-2xl">
-                  <p className="text-gray-500 font-medium">No plans available right now. Please contact support.</p>
+                <div className="text-center py-10">
+                  <p className="text-slate-500 font-medium">No promotion plans are currently active. Please ask the admin to add promotion plans.</p>
                 </div>
               ) : (
-                <div className="grid md:grid-cols-3 gap-6">
-                  {plans.map((plan) => (
-                    <div key={plan._id} className="border-2 border-gray-100 rounded-3xl p-6 hover:border-primary transition-all flex flex-col bg-white hover:shadow-xl relative overflow-hidden group">
-                      <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-primary to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      
-                      <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
-                      <div className="mt-4 flex items-baseline text-4xl font-black text-gray-900">
-                        ₹{plan.price}
-                      </div>
-                      <p className="text-sm text-gray-500 font-semibold uppercase tracking-wider mt-1 mb-6">
-                        for {plan.durationInDays} days
-                      </p>
-
-                      <ul className="space-y-3 mb-8 flex-1">
-                        {plan.description && plan.description.length > 0 ? (
-                          plan.description.map((desc, i) => (
-                            <li key={i} className="flex items-start gap-2 text-sm text-gray-600 font-medium">
-                              <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-                              {desc}
-                            </li>
-                          ))
-                        ) : (
-                          <li className="flex items-start gap-2 text-sm text-gray-600 font-medium">
-                            <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-                            Premium placement in search
-                          </li>
-                        )}
-                      </ul>
-
-                      <button
-                        onClick={() => handlePayment(plan)}
-                        disabled={processingId !== null}
-                        className="w-full bg-slate-900 text-white rounded-xl py-3.5 font-bold hover:bg-primary transition-colors flex items-center justify-center gap-2"
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {plans.map((plan, i) => {
+                    const isPopular = i === 1; // Just for UI demonstration
+                    
+                    return (
+                      <div 
+                        key={plan._id}
+                        className={`relative rounded-3xl p-6 transition-all duration-300 border-2 ${
+                          isPopular 
+                            ? 'bg-slate-900 border-slate-900 text-white shadow-xl scale-[1.02]' 
+                            : 'bg-white border-slate-100 hover:border-slate-300'
+                        }`}
                       >
-                        {processingId === plan._id ? <Loader2 className="animate-spin h-5 w-5" /> : (
-                          <>Choose Plan <ArrowRight size={18} /></>
+                        {isPopular && (
+                          <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-950 text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-sm">
+                            Most Popular
+                          </div>
                         )}
-                      </button>
-                    </div>
-                  ))}
+                        
+                        <div className="mb-6">
+                          <h3 className={`text-xl font-bold font-display ${isPopular ? 'text-white' : 'text-slate-900'}`}>
+                            {plan.name}
+                          </h3>
+                          <div className="mt-4 flex items-baseline gap-1.5">
+                            <span className="text-4xl font-black tracking-tight">₹{plan.price}</span>
+                          </div>
+                          <div className={`mt-3 inline-block px-3 py-1.5 rounded-lg text-xs font-bold ${
+                            isPopular ? 'bg-white/10 text-slate-200' : 'bg-slate-100 text-slate-600'
+                          }`}>
+                            {plan.durationInDays} Days Visibility
+                          </div>
+                        </div>
+
+                        <ul className="space-y-4 mb-8">
+                          {plan.description && plan.description.length > 0 ? (
+                            plan.description.map((desc, idx) => (
+                              <li key={idx} className="flex items-start gap-3 text-sm">
+                                <CheckCircle2 className={`w-5 h-5 shrink-0 ${isPopular ? 'text-yellow-400' : 'text-emerald-500'}`} />
+                                <span className={isPopular ? 'text-slate-300' : 'text-slate-600'}>{desc}</span>
+                              </li>
+                            ))
+                          ) : (
+                            <li className="flex items-start gap-3 text-sm">
+                              <CheckCircle2 className={`w-5 h-5 shrink-0 ${isPopular ? 'text-yellow-400' : 'text-emerald-500'}`} />
+                              <span className={isPopular ? 'text-slate-300' : 'text-slate-600'}>Premium Placement</span>
+                            </li>
+                          )}
+                        </ul>
+
+                        <button
+                          onClick={() => handlePayment(plan)}
+                          disabled={processingId === plan._id}
+                          className={`w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+                            isPopular
+                              ? 'bg-white text-slate-900 hover:bg-slate-100'
+                              : 'bg-slate-900 text-white hover:bg-black shadow-md hover:shadow-lg hover:-translate-y-0.5'
+                          }`}
+                        >
+                          {processingId === plan._id ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <>Activate {plan.name} <ArrowRight className="w-4 h-4" /></>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

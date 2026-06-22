@@ -3,6 +3,7 @@ const path = require('path');
 const crypto = require('crypto');
 const Property = require('../models/Property');
 const User = require('../models/User');
+const SystemConfig = require('../models/SystemConfig');
 const ErrorResponse = require('../utils/errorResponse');
 
 // Helper to save base64 to Cloudinary with local-disk fallback
@@ -185,7 +186,13 @@ exports.getProperties = async (req, res, next) => {
             query = query.skip(startIndex).limit(limit);
         }
 
-        const properties = await query;
+        let properties = await query;
+
+        // If .lean() is used, Mongoose virtuals are stripped. We manually append the featured flag.
+        properties = properties.map(p => ({
+            ...p,
+            featured: p.isFeatured && (!p.featuredUntil || new Date(p.featuredUntil) > new Date())
+        }));
 
         res.status(200).json({
             success: true,
@@ -231,6 +238,27 @@ exports.createProperty = async (req, res, next) => {
         // Enforce the dealer phone and ID from the authenticated user session
         req.body.dealerPhone = req.user.phone;
         req.body.dealer = req.user._id;
+
+        // Check Subscription Listing Limit
+        const userObj = await User.findById(req.user._id).populate('activeSubscription.plan');
+        let config = await SystemConfig.findOne();
+        if (!config) config = { isSubscriptionEnforced: false, freeListingLimit: 50 };
+
+        let totalLimit = config.freeListingLimit; // Default Free limit from DB
+
+        if (!config.isSubscriptionEnforced) {
+            totalLimit = 999999; // Unlimited if subscriptions are off globally
+        } else if (userObj.activeSubscription && userObj.activeSubscription.status === 'active' && userObj.activeSubscription.endDate > new Date()) {
+            totalLimit = userObj.activeSubscription.plan?.listingLimit || 0;
+        }
+
+        const activeCount = await Property.countDocuments({ dealer: req.user._id });
+        if (activeCount >= totalLimit) {
+            return res.status(403).json({ 
+                success: false, 
+                message: `You have reached your limit of ${totalLimit} property listing(s). Please upgrade your subscription to post more properties.` 
+            });
+        }
 
         // Coerce numeric fields to positive absolute integers
         if (req.body.price !== undefined) {

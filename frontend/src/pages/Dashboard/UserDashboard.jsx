@@ -32,6 +32,7 @@ import api from "@/utils/api";
 import { toast } from "sonner";
 import PromotePropertyTab from "./PromotePropertyTab";
 import KycSection from "./KycSection";
+import SubscriptionTab from "./SubscriptionTab";
 
 export default function UserDashboard() {
   const { user, refreshUser, logout } = useAuth();
@@ -934,46 +935,7 @@ export default function UserDashboard() {
 
           {/* Tab 6: Subscription */}
           {activeTab === "Subscription" && (
-            <motion.div
-              key="subscription"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-              className="rounded-2xl border border-border bg-card p-6 shadow-sm space-y-6"
-            >
-              <div>
-                <h2 className="font-display text-xl font-bold">Premium Subscription</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">Manage billing details and system membership limits</p>
-              </div>
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="rounded-xl border border-primary/20 bg-primary-soft/20 p-5 space-y-3">
-                  <div className="text-xs uppercase tracking-wider text-primary font-bold">Current Plan</div>
-                  <div className="font-display text-2xl font-bold">Dealer Pro Partner</div>
-                  <p className="text-xs text-muted-foreground">Enjoy unlimited listings, priority customer callback requests, and top placement search sorting features.</p>
-                  <div className="flex justify-between text-xs font-semibold pt-4">
-                    <span>Status: Active</span>
-                    <span>Expires: 31 Dec 2026</span>
-                  </div>
-                </div>
-                <div className="rounded-xl border border-border bg-secondary/20 p-5 space-y-3">
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Usage Summary</div>
-                  <div className="space-y-2 pt-2">
-                    <div className="flex justify-between text-xs">
-                      <span>Listings Published</span>
-                      <span className="font-semibold">{dbProperties.length} / Unlimited</span>
-                    </div>
-                    <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
-                      <div className="bg-primary h-full rounded-full" style={{ width: '45%' }} />
-                    </div>
-                    <div className="flex justify-between text-xs pt-1">
-                      <span>SMS OTP Credits</span>
-                      <span className="font-semibold">500 / 500</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+            <SubscriptionTab />
           )}
 
           {/* Tab 7: Settings */}

@@ -37,6 +37,7 @@ const AdminDealersPage = lazy(() => import('@/pages/Admin/AdminDealersPage'));
 const AdminPropertiesPage = lazy(() => import('@/pages/Admin/AdminPropertiesPage'));
 const AdminEnquiriesPage = lazy(() => import('@/pages/Admin/AdminEnquiriesPage'));
 const PromotionPlansAdmin = lazy(() => import('@/pages/Admin/PromotionPlansAdmin'));
+const AdminSubscriptionsPage = lazy(() => import('@/pages/Admin/AdminSubscriptionsPage'));
 const AdminCitiesPage = lazy(() => import('@/pages/Admin/AdminCitiesPage'));
 const AdminReviewsPage = lazy(() => import('@/pages/Admin/AdminReviewsPage'));
 const AdminLegalPage = lazy(() => import('@/pages/Admin/AdminLegalPage'));
@@ -263,6 +264,9 @@ export default function AppRoutes() {
                 } />
                 <Route path="promotions" element={
                     <Suspense fallback={<PageSkeleton />}><PromotionPlansAdmin /></Suspense>
+                } />
+                <Route path="subscriptions" element={
+                    <Suspense fallback={<PageSkeleton />}><AdminSubscriptionsPage /></Suspense>
                 } />
                 <Route path="cities" element={
                     <Suspense fallback={<PageSkeleton />}><AdminCitiesPage /></Suspense>

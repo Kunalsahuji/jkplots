@@ -16,7 +16,8 @@ import {
   Star,
   MapPin,
   ThumbsUp,
-  FileText
+  FileText,
+  CreditCard
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -37,6 +38,7 @@ const MENU_GROUPS = [
       { icon: Home, label: "Property Management", path: "/admin/properties" },
       { icon: MessageSquare, label: "Enquiries", path: "/admin/enquiries" },
       { icon: Star, label: "Promotion Plans", path: "/admin/promotions" },
+      { icon: CreditCard, label: "Subscription Plans", path: "/admin/subscriptions" },
       { icon: MapPin, label: "Cities Management", path: "/admin/cities" },
       { icon: ThumbsUp, label: "Reviews & Feedbacks", path: "/admin/reviews" },
     ],

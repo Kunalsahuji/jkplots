@@ -1,11 +1,54 @@
-import { useState } from "react";
-import { Settings, Shield, Server, RefreshCw, Cpu, CheckCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Settings, Shield, Server, RefreshCw, Cpu, CheckCircle, Save, Loader2 } from "lucide-react";
 import api from "@/utils/api";
 import { toast } from "sonner";
 
 export default function AdminSettingsPage() {
   const [latency, setLatency] = useState(null);
   const [testing, setTesting] = useState(false);
+
+  const [sysLoading, setSysLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [config, setConfig] = useState({
+    isSubscriptionEnforced: false,
+    freeListingLimit: 50,
+  });
+
+  useEffect(() => {
+    fetchConfig();
+  }, []);
+
+  const fetchConfig = async () => {
+    try {
+      setSysLoading(true);
+      const { data } = await api.get("/system-config");
+      if (data.success && data.data) {
+        setConfig({
+          isSubscriptionEnforced: data.data.isSubscriptionEnforced,
+          freeListingLimit: data.data.freeListingLimit,
+        });
+      }
+    } catch (err) {
+      toast.error("Failed to load system configuration");
+    } finally {
+      setSysLoading(false);
+    }
+  };
+
+  const handleSaveConfig = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const { data } = await api.put("/system-config", config);
+      if (data.success) {
+        toast.success("System configuration saved successfully!");
+      }
+    } catch (err) {
+      toast.error("Failed to save configuration");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const runDiagnostics = async () => {
     setTesting(true);
@@ -37,10 +80,79 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
+        
+        {/* Subscription & Limits Control */}
+        <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden md:col-span-2">
+          <div className="px-6 py-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+            <h3 className="font-display text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Shield className="h-5 w-5 text-indigo-500" /> Subscription & Limits Control
+            </h3>
+          </div>
+          
+          {sysLoading ? (
+            <div className="flex items-center justify-center h-40">
+              <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+            </div>
+          ) : (
+            <form onSubmit={handleSaveConfig} className="p-6 space-y-8">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Enforce Paid Subscriptions</h3>
+                  <p className="text-sm text-slate-500 mt-1 max-w-xl">
+                    If disabled, property listings are completely <strong>free and unlimited</strong> for all dealers. If enabled, dealers are restricted to the Free Tier Limit and must purchase a subscription to post more properties.
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-2">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={config.isSubscriptionEnforced}
+                    onChange={(e) => setConfig({ ...config, isSubscriptionEnforced: e.target.checked })}
+                  />
+                  <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"></div>
+                </label>
+              </div>
+
+              <div className="border-t border-slate-100 pt-6">
+                <label className="block text-sm font-bold text-slate-900 mb-2">
+                  Free Tier Listing Limit
+                </label>
+                <p className="text-xs text-slate-500 mb-4 max-w-xl">
+                  How many properties can a dealer post for free if they do not have an active subscription? (This applies whether subscriptions are enforced or not).
+                </p>
+                <div className="relative max-w-xs">
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={config.freeListingLimit}
+                    onChange={(e) => setConfig({ ...config, freeListingLimit: Number(e.target.value) })}
+                    className="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm font-medium transition-all"
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-semibold pointer-events-none">
+                    Properties
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end pt-4">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-black focus:outline-none focus:ring-4 focus:ring-slate-200 disabled:opacity-50 shadow-md"
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Save Configuration
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+
         {/* API Credentials */}
         <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm space-y-4">
           <h3 className="font-display text-lg font-bold text-slate-900 flex items-center gap-2">
-            <Shield className="h-5 w-5 text-indigo-500" /> Platform API Environment
+            <Cpu className="h-5 w-5 text-indigo-500" /> Platform API Environment
           </h3>
           <p className="text-xs text-slate-400">
             Read-only configuration tokens loaded from the system server environments (`.env`).

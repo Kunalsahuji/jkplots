@@ -115,6 +115,8 @@ const promotionRoutes = require('./routes/promotionRoutes');
 const cityRoutes = require('./routes/cityRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const legalRoutes = require('./routes/legalRoutes');
+const systemConfigRoutes = require('./routes/systemConfigRoutes');
+const subscriptionPlanRoutes = require('./routes/subscriptionPlanRoutes');
 
 app.use('/api/properties', propertyRoutes);
 app.use('/api/users', userRoutes);
@@ -125,6 +127,8 @@ app.use('/api/promotions', promotionRoutes);
 app.use('/api/cities', cityRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/legal', legalRoutes);
+app.use('/api/system-config', systemConfigRoutes);
+app.use('/api/subscription-plans', subscriptionPlanRoutes);
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
