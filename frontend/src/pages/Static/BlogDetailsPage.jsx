@@ -42,6 +42,16 @@ export default function BlogDetailsPage() {
     }
     metaDescriptionTag.content = metaDesc;
 
+    // Update meta keywords
+    const keywordsVal = blog.seo?.keywords?.join(', ') || blog.tags?.join(', ');
+    let metaKeywordsTag = document.querySelector('meta[name="keywords"]');
+    if (!metaKeywordsTag) {
+      metaKeywordsTag = document.createElement('meta');
+      metaKeywordsTag.name = "keywords";
+      document.head.appendChild(metaKeywordsTag);
+    }
+    metaKeywordsTag.content = keywordsVal || "";
+
   }, [blog]);
 
   if (loading) {
