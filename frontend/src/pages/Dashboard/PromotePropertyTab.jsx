@@ -28,6 +28,8 @@ export default function PromotePropertyTab({ properties, refreshData }) {
   
   // Pagination & Filter state
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterPurpose, setFilterPurpose] = useState("All");
+  const [filterSort, setFilterSort] = useState("Newest");
   const [page, setPage] = useState(1);
   const itemsPerPage = 6;
 
@@ -149,19 +151,25 @@ export default function PromotePropertyTab({ properties, refreshData }) {
     p => !p.isFeatured || new Date(p.featuredUntil) <= new Date()
   );
 
-  // Apply search filter
-  const filteredNormal = normalProperties.filter(p => 
-    p.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    p.city?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Apply search and filters
+  let filteredNormal = normalProperties.filter(p => {
+    const matchSearch = p.title?.toLowerCase().includes(searchQuery.toLowerCase()) || p.city?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchPurpose = filterPurpose === "All" ? true : p.purpose === filterPurpose;
+    return matchSearch && matchPurpose;
+  });
+
+  if (filterSort === "Newest") filteredNormal.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  if (filterSort === "Oldest") filteredNormal.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  if (filterSort === "Price Low to High") filteredNormal.sort((a, b) => a.price - b.price);
+  if (filterSort === "Price High to Low") filteredNormal.sort((a, b) => b.price - a.price);
 
   const totalPages = Math.ceil(filteredNormal.length / itemsPerPage);
   const paginatedNormal = filteredNormal.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
-  // Reset page when search changes
+  // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, filterPurpose, filterSort]);
 
   return (
     <div className="space-y-10">
@@ -190,20 +198,44 @@ export default function PromotePropertyTab({ properties, refreshData }) {
 
       {/* Unpromoted Properties Section */}
       <section className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-3">
-          <div>
-            <h2 className="text-xl font-bold font-display">Wanna boost/promote your property?</h2>
-            <p className="text-sm text-muted-foreground hidden sm:block">Get 10x more views by featuring them</p>
+        <div className="flex flex-col border-b border-border pb-4 gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold font-display">Wanna boost/promote your property?</h2>
+              <p className="text-sm text-muted-foreground hidden sm:block">Get 10x more views by featuring them</p>
+            </div>
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <input
-              type="text"
-              placeholder="Search by title or city..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-secondary/50 border-none outline-none rounded-full text-sm font-medium focus:ring-2 focus:ring-primary/20 w-full sm:w-64"
-            />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search by title or city..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-secondary/50 border-none outline-none rounded-full text-sm font-medium focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            <select 
+              value={filterPurpose} 
+              onChange={(e) => setFilterPurpose(e.target.value)}
+              className="rounded-full bg-secondary/50 border-none px-4 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="All">All Purposes</option>
+              <option value="Buy">Buy</option>
+              <option value="Rent">Rent</option>
+              <option value="Commercial">Commercial</option>
+            </select>
+            <select 
+              value={filterSort} 
+              onChange={(e) => setFilterSort(e.target.value)}
+              className="rounded-full bg-secondary/50 border-none px-4 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="Newest">Newest</option>
+              <option value="Oldest">Oldest</option>
+              <option value="Price Low to High">Price: Low to High</option>
+              <option value="Price High to Low">Price: High to Low</option>
+            </select>
           </div>
         </div>
         

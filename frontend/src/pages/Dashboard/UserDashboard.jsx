@@ -67,6 +67,8 @@ export default function UserDashboard() {
   // Listing Pagination & Filters
   const [listingSearch, setListingSearch] = useState("");
   const [listingStatus, setListingStatus] = useState("All");
+  const [listingPurpose, setListingPurpose] = useState("All");
+  const [listingSort, setListingSort] = useState("Newest");
   const [listingPage, setListingPage] = useState(1);
   const listingsPerPage = 6;
   
@@ -227,12 +229,20 @@ export default function UserDashboard() {
 
   // Dashboard Listings Filtering & Pagination
   const filteredListings = useMemo(() => {
-    return dbProperties.filter(p => {
+    let result = dbProperties.filter(p => {
       const matchSearch = p.title?.toLowerCase().includes(listingSearch.toLowerCase()) || p.city?.toLowerCase().includes(listingSearch.toLowerCase());
       const matchStatus = listingStatus === "All" ? true : listingStatus === "Verified" ? p.verified : !p.verified;
-      return matchSearch && matchStatus;
+      const matchPurpose = listingPurpose === "All" ? true : p.purpose === listingPurpose;
+      return matchSearch && matchStatus && matchPurpose;
     });
-  }, [dbProperties, listingSearch, listingStatus]);
+
+    if (listingSort === "Newest") result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    if (listingSort === "Oldest") result.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    if (listingSort === "Price Low to High") result.sort((a, b) => a.price - b.price);
+    if (listingSort === "Price High to Low") result.sort((a, b) => b.price - a.price);
+
+    return result;
+  }, [dbProperties, listingSearch, listingStatus, listingPurpose, listingSort]);
 
   const paginatedListings = useMemo(() => {
     const start = (listingPage - 1) * listingsPerPage;
@@ -242,7 +252,7 @@ export default function UserDashboard() {
 
   useEffect(() => {
     setListingPage(1);
-  }, [listingSearch, listingStatus]);
+  }, [listingSearch, listingStatus, listingPurpose, listingSort]);
 
   // Pagination helpers
   const getPaginated = (arr, page, limit) => arr.slice((page - 1) * limit, page * limit);
@@ -526,15 +536,15 @@ export default function UserDashboard() {
                   <p className="text-xs text-muted-foreground mt-0.5">Edit, delete, and view status of properties</p>
                 </div>
                 {dbProperties.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
+                  <div className="flex flex-wrap items-center gap-2 mt-3 sm:mt-0">
+                    <div className="relative flex-1 min-w-[150px]">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                       <input 
                         type="text" 
                         placeholder="Search properties..." 
                         value={listingSearch}
                         onChange={(e) => setListingSearch(e.target.value)}
-                        className="rounded-full border border-border bg-background py-1.5 pl-9 pr-4 text-xs outline-none focus:border-primary w-[200px]"
+                        className="w-full rounded-full border border-border bg-background py-1.5 pl-9 pr-4 text-xs outline-none focus:border-primary"
                       />
                     </div>
                     <select 
@@ -545,6 +555,26 @@ export default function UserDashboard() {
                       <option value="All">All Status</option>
                       <option value="Verified">Verified</option>
                       <option value="Unverified">Pending</option>
+                    </select>
+                    <select 
+                      value={listingPurpose} 
+                      onChange={(e) => setListingPurpose(e.target.value)}
+                      className="rounded-full border border-border bg-background px-3 py-1.5 text-xs outline-none focus:border-primary"
+                    >
+                      <option value="All">All Purposes</option>
+                      <option value="Buy">Buy</option>
+                      <option value="Rent">Rent</option>
+                      <option value="Commercial">Commercial</option>
+                    </select>
+                    <select 
+                      value={listingSort} 
+                      onChange={(e) => setListingSort(e.target.value)}
+                      className="rounded-full border border-border bg-background px-3 py-1.5 text-xs outline-none focus:border-primary"
+                    >
+                      <option value="Newest">Newest</option>
+                      <option value="Oldest">Oldest</option>
+                      <option value="Price Low to High">Price: Low to High</option>
+                      <option value="Price High to Low">Price: High to Low</option>
                     </select>
                   </div>
                 )}
@@ -558,7 +588,7 @@ export default function UserDashboard() {
                   <Inbox className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
                   <p className="text-sm font-semibold text-foreground">No matching listings</p>
                   <p className="text-xs text-muted-foreground mt-1">Try adjusting your filters or search.</p>
-                  <button onClick={() => {setListingSearch(""); setListingStatus("All");}} className="mt-4 text-xs font-semibold text-primary hover:underline">Reset Filters</button>
+                  <button onClick={() => {setListingSearch(""); setListingStatus("All"); setListingPurpose("All"); setListingSort("Newest");}} className="mt-4 text-xs font-semibold text-primary hover:underline">Reset Filters</button>
                 </div>
               ) : (
                 <>
