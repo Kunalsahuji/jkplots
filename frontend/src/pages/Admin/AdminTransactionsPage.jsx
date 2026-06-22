@@ -9,6 +9,11 @@ export default function AdminTransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [itemTypeFilter, setItemTypeFilter] = useState("all");
+
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
 
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
@@ -72,10 +77,22 @@ export default function AdminTransactionsPage() {
       planName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       razorpayId.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesStatus = statusFilter === "all" || t.status.toLowerCase() === statusFilter.toLowerCase();
+    const matchesStatus = statusFilter === "all" || (t.status || "").toLowerCase() === statusFilter.toLowerCase();
+    
+    // Normalize itemType for legacy records
+    const normalizedItemType = t.itemType ? t.itemType : t.plan ? "Promotion" : "Subscription";
+    const matchesItemType = itemTypeFilter === "all" || normalizedItemType.toLowerCase() === itemTypeFilter.toLowerCase();
 
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesItemType;
   });
+
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+  const paginatedTransactions = filteredTransactions.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+  // Reset to page 1 on filter change
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, statusFilter, itemTypeFilter]);
 
   return (
     <div className="space-y-8 text-slate-800 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -103,17 +120,28 @@ export default function AdminTransactionsPage() {
             className="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 hover:bg-slate-100/50 focus:bg-white border-none focus:ring-2 focus:ring-slate-950 rounded-xl transition-all outline-none"
           />
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="text-sm bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 font-semibold outline-none"
-        >
-          <option value="all">All Statuses</option>
-          <option value="success">Success</option>
-          <option value="pending">Pending</option>
-          <option value="failed">Failed</option>
-          <option value="rejected">Rejected</option>
-        </select>
+        <div className="flex gap-3">
+          <select
+            value={itemTypeFilter}
+            onChange={(e) => setItemTypeFilter(e.target.value)}
+            className="text-sm bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 font-semibold outline-none"
+          >
+            <option value="all">All Items</option>
+            <option value="subscription">Subscriptions</option>
+            <option value="promotion">Promotions</option>
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="text-sm bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 font-semibold outline-none"
+          >
+            <option value="all">All Statuses</option>
+            <option value="success">Success</option>
+            <option value="pending">Pending</option>
+            <option value="failed">Failed</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
       </div>
 
       {/* Table */}
@@ -137,14 +165,14 @@ export default function AdminTransactionsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {filteredTransactions.length === 0 ? (
+                {paginatedTransactions.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="px-6 py-12 text-center text-slate-400 text-sm">
                       No matching transactions found.
                     </td>
                   </tr>
                 ) : (
-                  filteredTransactions.map((t) => (
+                  paginatedTransactions.map((t) => (
                     <tr key={t._id} className="hover:bg-slate-50/40 transition">
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
@@ -155,7 +183,7 @@ export default function AdminTransactionsPage() {
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
                           <span className="font-bold text-slate-800">
-                            {t.itemType}: {t.subscriptionPlan?.name || t.promotionPlan?.name || "Deleted Plan"}
+                            {t.itemType ? t.itemType : t.plan ? "Promotion" : "Subscription"}: {t.subscriptionPlan?.name || t.promotionPlan?.name || t.plan?.name || "Deleted Plan"}
                           </span>
                           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mt-0.5">
                             {new Date(t.createdAt).toLocaleDateString()}
@@ -167,28 +195,36 @@ export default function AdminTransactionsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
-                          <span className={`text-xs font-bold ${t.paymentMethod === 'Razorpay' ? 'text-indigo-600' : 'text-emerald-600'}`}>
-                            {t.paymentMethod}
+                          <span className={`text-xs font-bold ${(t.paymentMethod || 'Razorpay') === 'Razorpay' ? 'text-indigo-600' : 'text-emerald-600'}`}>
+                            {t.paymentMethod || 'Razorpay'}
                           </span>
                           <span className="text-[10px] text-slate-400 font-mono truncate max-w-[150px]">
-                            {t.paymentMethod === 'Razorpay' ? t.razorpayOrderId : t.offlineReference || "N/A"}
+                            {(t.paymentMethod || 'Razorpay') === 'Razorpay' ? t.razorpayOrderId : t.offlineReference || "N/A"}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
-                          t.status === 'Success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
-                          t.status === 'Pending' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
-                          'bg-red-50 text-red-700 border border-red-100'
-                        }`}>
-                          {t.status === 'Success' ? <CheckCircle2 className="w-3.5 h-3.5" /> : 
-                           t.status === 'Pending' ? <Clock className="w-3.5 h-3.5" /> : 
-                           <XCircle className="w-3.5 h-3.5" />}
-                          {t.status}
-                        </span>
+                        {(() => {
+                          const status = (t.status || "").toLowerCase();
+                          const isSuccess = status === 'success';
+                          const isPending = status === 'pending' || status === 'created';
+                          
+                          return (
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                              isSuccess ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
+                              isPending ? 'bg-amber-50 text-amber-700 border border-amber-100' :
+                              'bg-red-50 text-red-700 border border-red-100'
+                            }`}>
+                              {isSuccess ? <CheckCircle2 className="w-3.5 h-3.5" /> : 
+                               isPending ? <Clock className="w-3.5 h-3.5" /> : 
+                               <XCircle className="w-3.5 h-3.5" />}
+                              <span className="capitalize">{status}</span>
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        {t.status === 'Pending' && t.paymentMethod === 'Offline' && (
+                        {((t.status || "").toLowerCase() === 'pending' || (t.status || "").toLowerCase() === 'created') && (t.paymentMethod || 'Razorpay') === 'Offline' && (
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => handleUpdateStatus(t._id, "Success", t.status)}
@@ -204,7 +240,7 @@ export default function AdminTransactionsPage() {
                             </button>
                           </div>
                         )}
-                        {t.status === 'Success' && (
+                        {(t.status || "").toLowerCase() === 'success' && (
                           <span className="text-xs text-slate-400 font-medium">Completed</span>
                         )}
                       </td>
@@ -214,6 +250,30 @@ export default function AdminTransactionsPage() {
               </tbody>
             </table>
           </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+              <span className="text-sm text-slate-500 font-medium">
+                Page {page} of {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  disabled={page === 1}
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold hover:bg-white disabled:opacity-50 transition"
+                >
+                  Previous
+                </button>
+                <button
+                  disabled={page === totalPages}
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold hover:bg-white disabled:opacity-50 transition"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

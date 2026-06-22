@@ -14,6 +14,12 @@ export default function SubscriptionTab() {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
 
+  // Filters & Pagination for Billing History
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [itemTypeFilter, setItemTypeFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 5;
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -280,12 +286,36 @@ export default function SubscriptionTab() {
       </div>
 
       {transactions.length > 0 && (
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm mt-8">
-          <div>
-            <h3 className="font-display text-lg font-bold">Billing History</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Your past transactions and pending payment requests</p>
+        <div className="rounded-2xl border border-border bg-card shadow-sm mt-8 overflow-hidden">
+          <div className="p-6 border-b border-border flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <h3 className="font-display text-lg font-bold">Billing History</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Your past transactions and pending payment requests</p>
+            </div>
+            <div className="flex gap-2">
+              <select
+                value={itemTypeFilter}
+                onChange={(e) => { setItemTypeFilter(e.target.value); setPage(1); }}
+                className="text-xs bg-secondary border border-border rounded-lg px-3 py-1.5 font-semibold outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="all">All Items</option>
+                <option value="subscription">Subscriptions</option>
+                <option value="promotion">Promotions</option>
+              </select>
+              <select
+                value={statusFilter}
+                onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+                className="text-xs bg-secondary border border-border rounded-lg px-3 py-1.5 font-semibold outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="all">All Statuses</option>
+                <option value="success">Success</option>
+                <option value="pending">Pending</option>
+                <option value="failed">Failed</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
           </div>
-          <div className="overflow-x-auto mt-4">
+          <div className="overflow-x-auto">
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="border-b border-border text-xs uppercase font-bold text-muted-foreground">
                 <tr>
@@ -297,25 +327,87 @@ export default function SubscriptionTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {transactions.map(t => (
-                  <tr key={t._id}>
-                    <td className="px-4 py-3 text-slate-600 font-medium">{new Date(t.createdAt).toLocaleDateString()}</td>
-                    <td className="px-4 py-3 font-semibold text-slate-800">
-                      {t.itemType}: {t.subscriptionPlan?.name || t.promotionPlan?.name || "Plan"}
-                    </td>
-                    <td className="px-4 py-3 font-bold">₹{t.amount}</td>
-                    <td className="px-4 py-3 text-xs text-slate-500 font-semibold uppercase">{t.paymentMethod}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-block px-2.5 py-1 rounded-md text-xs font-bold ${
-                        t.status === 'Success' ? 'bg-emerald-100 text-emerald-700' :
-                        t.status === 'Pending' ? 'bg-amber-100 text-amber-700' :
-                        'bg-red-100 text-red-700'
-                      }`}>
-                        {t.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {(() => {
+                  const filteredTransactions = transactions.filter(t => {
+                    const status = (t.status || "").toLowerCase();
+                    const matchesStatus = statusFilter === "all" || status === statusFilter.toLowerCase() || (statusFilter === 'pending' && status === 'created');
+                    
+                    const itemType = t.itemType ? t.itemType : t.plan ? "Promotion" : "Subscription";
+                    const matchesItemType = itemTypeFilter === "all" || itemType.toLowerCase() === itemTypeFilter.toLowerCase();
+                    
+                    return matchesStatus && matchesItemType;
+                  });
+
+                  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+                  const paginatedTransactions = filteredTransactions.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+                  if (paginatedTransactions.length === 0) {
+                    return (
+                      <tr>
+                        <td colSpan="5" className="px-4 py-8 text-center text-muted-foreground text-sm">
+                          No matching transactions found.
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  return (
+                    <>
+                      {paginatedTransactions.map(t => {
+                        const status = (t.status || "").toLowerCase();
+                  const isSuccess = status === 'success';
+                  const isPending = status === 'pending' || status === 'created';
+                  const method = t.paymentMethod || 'Razorpay';
+                  const itemType = t.itemType ? t.itemType : t.plan ? "Promotion" : "Subscription";
+
+                  return (
+                    <tr key={t._id}>
+                      <td className="px-4 py-3 text-slate-600 font-medium">{new Date(t.createdAt).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 font-semibold text-slate-800">
+                        {itemType}: {t.subscriptionPlan?.name || t.promotionPlan?.name || t.plan?.name || "Deleted Plan"}
+                      </td>
+                      <td className="px-4 py-3 font-bold">₹{t.amount}</td>
+                      <td className="px-4 py-3 text-xs text-slate-500 font-semibold uppercase">{method}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-block px-2.5 py-1 rounded-md text-xs font-bold capitalize ${
+                          isSuccess ? 'bg-emerald-100 text-emerald-700' :
+                          isPending ? 'bg-amber-100 text-amber-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          {status}
+                        </span>
+                      </td>
+                        </tr>
+                      );
+                    })}
+                    {totalPages > 1 && (
+                      <tr>
+                        <td colSpan="5" className="px-4 py-3 bg-secondary/30">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground font-medium">Page {page} of {totalPages}</span>
+                            <div className="flex gap-2">
+                              <button
+                                disabled={page === 1}
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                className="px-3 py-1 rounded-md border border-border bg-background text-xs font-semibold hover:bg-secondary disabled:opacity-50 transition"
+                              >
+                                Previous
+                              </button>
+                              <button
+                                disabled={page === totalPages}
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                className="px-3 py-1 rounded-md border border-border bg-background text-xs font-semibold hover:bg-secondary disabled:opacity-50 transition"
+                              >
+                                Next
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                );
+              })()}
               </tbody>
             </table>
           </div>
