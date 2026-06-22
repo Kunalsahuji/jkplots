@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { getConfig, updateConfig } = require('../controllers/systemConfigController');
+const { getConfig, updateConfig, getPlatformStats } = require('../controllers/systemConfigController');
 const { protect, authorize } = require('../middleware/auth');
+
+router.route('/stats')
+    .get(getPlatformStats);
 
 router.route('/')
     .get(getConfig)

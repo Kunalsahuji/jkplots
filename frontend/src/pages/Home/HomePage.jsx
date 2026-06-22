@@ -77,6 +77,13 @@ const purposeCategories = [
 export default function HomePage() {
   const [propertyList, setPropertyList] = useState([]);
   const [bgIndex, setBgIndex] = useState(0);
+  const [heroBanners, setHeroBanners] = useState([]);
+  const [platformStats, setPlatformStats] = useState({
+    properties: "12.5K+",
+    dealers: "1.2K+",
+    users: "50K+",
+    rating: "4.8"
+  });
 
   const { user, isAuthenticated } = useAuth();
   const showPostProperty = isAuthenticated && user?.role === "dealer";
@@ -193,18 +200,50 @@ export default function HomePage() {
       }
     };
     fetchProperties();
+
+    const fetchBanners = async () => {
+      try {
+        const { data } = await api.get("/banners?placement=homepage_hero");
+        if (data.success && data.data.length > 0) {
+          setHeroBanners(data.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch banners:", err);
+      }
+    };
+    fetchBanners();
+
+    const fetchStats = async () => {
+      try {
+        const { data } = await api.get("/system-config/stats");
+        if (data.success && data.data) {
+          const formatNum = (n) => n >= 1000 ? (n/1000).toFixed(1).replace('.0', '') + 'K+' : n + '+';
+          setPlatformStats({
+            properties: formatNum(data.data.properties),
+            dealers: formatNum(data.data.dealers),
+            users: formatNum(data.data.users),
+            rating: data.data.rating
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch stats:", err);
+      }
+    };
+    fetchStats();
   }, []);
 
   const activeProperties = propertyList.length > 0 ? propertyList : properties;
   const featured = activeProperties.filter((p) => p.isFeatured && new Date(p.featuredUntil) > new Date()).slice(0, 8);
   const all = activeProperties.filter((p) => !p.isFeatured || new Date(p.featuredUntil) <= new Date()).slice(0, 8);
 
+  const activeBanners = heroBanners.length > 0 ? heroBanners : heroImages.map(img => ({ imageUrl: img }));
+
   useEffect(() => {
     const timer = setInterval(() => {
-      setBgIndex((prev) => (prev + 1) % heroImages.length);
+      setBgIndex((prev) => (prev + 1) % activeBanners.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [activeBanners.length]);
 
   return (
     <div>
@@ -212,22 +251,37 @@ export default function HomePage() {
       {/* HERO */}
       <section className="relative overflow-hidden h-[calc(100vh-64px)] flex items-center">
         <div className="absolute inset-0">
-          {heroImages.map((img, index) => (
-            <img
+          {activeBanners.map((b, index) => (
+            <div
               key={index}
-              src={img}
-              alt={`Kashmir valley villa slide ${index + 1}`}
-              width={1920}
-              height={1080}
-              className={`absolute inset-0 h-full w-full object-cover transition-all duration-[5000ms] ease-out ${
+              className={`absolute inset-0 h-full w-full transition-all duration-[5000ms] ease-out ${
                 index === bgIndex ? "opacity-100 scale-105" : "opacity-0 scale-100"
               }`}
-            />
+            >
+              {b.targetUrl ? (
+                <a 
+                  href={b.targetUrl} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  onClick={() => b._id && api.put(`/banners/${b._id}/click`).catch(e=>console.log(e))}
+                  className="absolute inset-0 z-10"
+                >
+                  <span className="sr-only">{b.title || 'Promotional Banner'}</span>
+                </a>
+              ) : null}
+              <img
+                src={b.imageUrl}
+                alt={b.title || `Kashmir valley villa slide ${index + 1}`}
+                width={1920}
+                height={1080}
+                className="h-full w-full object-cover"
+              />
+            </div>
           ))}
-          <div className="absolute inset-0 bg-gradient-to-b from-foreground/50 via-foreground/35 to-foreground/85" />
+          <div className="absolute inset-0 bg-gradient-to-b from-foreground/50 via-foreground/35 to-foreground/85 pointer-events-none" />
           {/* Navigation Dots */}
-          <div className="absolute bottom-6 right-6 flex gap-2 z-10">
-            {heroImages.map((_, i) => (
+          <div className="absolute bottom-6 right-6 flex gap-2 z-20 pointer-events-auto">
+            {activeBanners.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setBgIndex(i)}
@@ -239,29 +293,31 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-        <div className="relative container-px mx-auto w-full max-w-7xl pb-8 pt-8 md:pb-16 md:pt-16 z-10">
-          <div className="max-w-3xl text-background">
+        <div className="relative container-px mx-auto w-full max-w-7xl pb-8 pt-8 md:pb-16 md:pt-16 z-20 pointer-events-none">
+          <div className="max-w-3xl text-background pointer-events-auto inline-block">
             <span className="inline-flex items-center gap-2 rounded-full border border-background/30 bg-background/10 px-3 py-1.5 text-xs font-medium backdrop-blur">
               <Sparkles className="h-3.5 w-3.5 text-accent" /> J&amp;K's most trusted marketplace
             </span>
             <h1 className="mt-4 font-display text-3xl font-bold leading-[1.1] sm:text-4xl md:text-6xl lg:text-7xl">
-              Find your place<br />in the <span className="text-accent">valley.</span>
+              {activeBanners[bgIndex]?.title || (
+                <>Find your place<br />in the <span className="text-accent">valley.</span></>
+              )}
             </h1>
             <p className="mt-4 max-w-xl text-sm text-background/85 sm:text-base md:text-lg">
               Verified villas, apartments, plots and commercial spaces across Jammu &amp; Kashmir — handpicked, transparent, real.
             </p>
           </div>
 
-          <div className="mt-8 md:mt-10">
+          <div className="mt-8 md:mt-10 pointer-events-auto">
             <SearchBar />
           </div>
 
-          <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3 text-sm text-background/90">
+          <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3 text-sm text-background/90 pointer-events-auto">
             {[
-              ["12,500+", "Verified listings"],
-              ["1,200+", "Trusted dealers"],
-              ["50K+", "Happy customers"],
-              ["4.8★", "User rating"],
+              [platformStats.properties, "Verified listings"],
+              [platformStats.dealers, "Trusted dealers"],
+              [platformStats.users, "Happy customers"],
+              [`${platformStats.rating}★`, "User rating"],
             ].map(([n, l]) => (
               <div key={l}>
                 <div className="font-display text-xl font-bold md:text-2xl">{n}</div>

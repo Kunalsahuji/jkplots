@@ -41,6 +41,7 @@ const AdminSubscriptionsPage = lazy(() => import('@/pages/Admin/AdminSubscriptio
 const AdminCitiesPage = lazy(() => import('@/pages/Admin/AdminCitiesPage'));
 const AdminReviewsPage = lazy(() => import('@/pages/Admin/AdminReviewsPage'));
 const AdminLegalPage = lazy(() => import('@/pages/Admin/AdminLegalPage'));
+const AdminBannersPage = lazy(() => import('@/pages/Admin/AdminBannersPage'));
 const AdminSettingsPage = lazy(() => import('@/pages/Admin/AdminSettingsPage'));
 const EditPropertyPage = lazy(() => import('@/pages/Properties/EditPropertyPage'));
 const ReviewsPage = lazy(() => import('@/pages/Reviews/ReviewsPage'));
@@ -274,6 +275,9 @@ export default function AppRoutes() {
                 } />
                 <Route path="cities" element={
                     <Suspense fallback={<PageSkeleton />}><AdminCitiesPage /></Suspense>
+                } />
+                <Route path="banners" element={
+                    <Suspense fallback={<PageSkeleton />}><AdminBannersPage /></Suspense>
                 } />
                 <Route path="reviews" element={
                     <Suspense fallback={<PageSkeleton />}><AdminReviewsPage /></Suspense>
