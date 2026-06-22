@@ -10,6 +10,7 @@ const nav = [
   { to: "/properties?purpose=Buy", label: "Buy" },
   { to: "/properties?purpose=Rent", label: "Rent" },
   { to: "/properties?purpose=Commercial", label: "Commercial" },
+  { to: "/blog", label: "Blog" },
   { to: "/dashboard", label: "Dashboard" },
 ];
 

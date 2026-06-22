@@ -44,6 +44,7 @@ const AdminLegalPage = lazy(() => import('@/pages/Admin/AdminLegalPage'));
 const AdminBannersPage = lazy(() => import('@/pages/Admin/AdminBannersPage'));
 const AdminFraudPage = lazy(() => import('@/pages/Admin/AdminFraudPage'));
 const AdminTransactionsPage = lazy(() => import('@/pages/Admin/AdminTransactionsPage'));
+const AdminBlogsPage = lazy(() => import('@/pages/Admin/AdminBlogsPage'));
 const PropertyReviewsPage = lazy(() => import('@/pages/Properties/PropertyReviewsPage'));
 const AdminSettingsPage = lazy(() => import('@/pages/Admin/AdminSettingsPage'));
 const EditPropertyPage = lazy(() => import('@/pages/Properties/EditPropertyPage'));
@@ -52,6 +53,8 @@ const AboutPage = lazy(() => import('@/pages/Static/AboutPage'));
 const ContactPage = lazy(() => import('@/pages/Static/ContactPage'));
 const PrivacyPage = lazy(() => import('@/pages/Static/PrivacyPage'));
 const TermsPage = lazy(() => import('@/pages/Static/TermsPage'));
+const BlogListPage = lazy(() => import('@/pages/Static/BlogListPage'));
+const BlogDetailsPage = lazy(() => import('@/pages/Static/BlogDetailsPage'));
 
 // ─── Skeleton loader shown while session check is in-flight ───────────────────
 function PageSkeleton() {
@@ -180,6 +183,12 @@ export default function AppRoutes() {
                 <Route path="/terms" element={
                     <Suspense fallback={<PageSkeleton />}><TermsPage /></Suspense>
                 } />
+                <Route path="/blog" element={
+                    <Suspense fallback={<PageSkeleton />}><BlogListPage /></Suspense>
+                } />
+                <Route path="/blog/:slug" element={
+                    <Suspense fallback={<PageSkeleton />}><BlogDetailsPage /></Suspense>
+                } />
 
                 {/* Protected — require login */}
                 <Route path="/explore" element={
@@ -299,6 +308,9 @@ export default function AppRoutes() {
                 } />
                 <Route path="settings" element={
                     <Suspense fallback={<PageSkeleton />}><AdminSettingsPage /></Suspense>
+                } />
+                <Route path="blogs" element={
+                    <Suspense fallback={<PageSkeleton />}><AdminBlogsPage /></Suspense>
                 } />
             </Route>
 

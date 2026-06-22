@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import PromotePropertyTab from "./PromotePropertyTab";
 import KycSection from "./KycSection";
 import SubscriptionTab from "./SubscriptionTab";
+import DealerBlogsTab from "./DealerBlogsTab";
 
 export default function UserDashboard() {
   const { user, refreshUser, logout } = useAuth();
@@ -55,6 +56,7 @@ export default function UserDashboard() {
       saved: "Saved",
       notifications: "Notifications",
       subscription: "Subscription",
+      blogs: "My Articles",
       reports: "My Reports",
       settings: "Settings"
     };
@@ -88,7 +90,7 @@ export default function UserDashboard() {
     
     // Protect dealer-only and admin-only tabs from normal users
     if (!isDealer && !isAdmin) {
-      if (["My Listings", "All Listings", "Promote Property", "Subscription"].includes(desiredTab)) {
+      if (["My Listings", "All Listings", "Promote Property", "Subscription", "My Articles"].includes(desiredTab)) {
         navigate("/dashboard/overview", { replace: true });
         return;
       }
@@ -367,6 +369,7 @@ export default function UserDashboard() {
     { label: "Saved", path: "saved", icon: Heart },
     { label: "Notifications", path: "notifications", icon: Bell },
     ...(isDealer ? [{ label: "Subscription", path: "subscription", icon: CreditCard }] : []),
+    ...(isDealer ? [{ label: "My Articles", path: "blogs", icon: FileText }] : []),
     { label: "My Reports", path: "reports", icon: AlertTriangle },
     { label: "Settings", path: "settings", icon: Settings },
   ];
@@ -1137,6 +1140,11 @@ export default function UserDashboard() {
                 </>
               )}
             </motion.div>
+          )}
+
+          {/* Tab 9: My Articles */}
+          {activeTab === "My Articles" && (
+            <DealerBlogsTab />
           )}
 
           </AnimatePresence>

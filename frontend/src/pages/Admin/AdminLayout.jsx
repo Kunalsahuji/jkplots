@@ -42,6 +42,7 @@ const MENU_GROUPS = [
       { icon: MapPin, label: "Cities Management", path: "/admin/cities" },
       { icon: ImageIcon, label: "Banners", path: "/admin/banners" },
       { icon: ThumbsUp, label: "Reviews & Feedbacks", path: "/admin/reviews" },
+      { icon: FileText, label: "Blogs CMS", path: "/admin/blogs" },
       { icon: AlertTriangle, label: "Fraud Logs", path: "/admin/fraud" },
     ],
   },

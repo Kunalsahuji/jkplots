@@ -22,7 +22,9 @@ if (process.env.NODE_ENV !== 'test') {
 const app = express();
 
 // ─── Security Headers ─────────────────────────────────────────────────────────
-app.use(helmet());
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 app.use(
@@ -120,6 +122,7 @@ const systemConfigRoutes = require('./routes/systemConfigRoutes');
 const subscriptionPlanRoutes = require('./routes/subscriptionPlanRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
+const blogRoutes = require('./routes/blogRoutes');
 
 app.use('/api/properties', propertyRoutes);
 app.use('/api/users', userRoutes);
@@ -135,6 +138,7 @@ app.use('/api/system-config', systemConfigRoutes);
 app.use('/api/subscription-plans', subscriptionPlanRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/transactions', transactionRoutes);
+app.use('/api/blogs', blogRoutes);
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
