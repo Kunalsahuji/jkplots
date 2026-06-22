@@ -6,6 +6,7 @@ import {
 import { toast } from "sonner";
 import api from "../../utils/api";
 import { Link } from "react-router-dom";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 export default function AdminBlogsPage() {
   const [blogs, setBlogs] = useState([]);
@@ -32,6 +33,13 @@ export default function AdminBlogsPage() {
     keywords: ""
   });
   const [saving, setSaving] = useState(false);
+
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {}
+  });
 
   useEffect(() => {
     fetchBlogs();
@@ -63,8 +71,16 @@ export default function AdminBlogsPage() {
     }
   };
 
+  const handleDeleteClick = (id) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete Article",
+      message: "Are you sure you want to delete this article? This action cannot be undone.",
+      onConfirm: () => handleDelete(id)
+    });
+  };
+
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this blog?")) return;
     try {
       const { data } = await api.delete(`/blogs/author/${id}`);
       if (data.success) {
@@ -213,18 +229,29 @@ export default function AdminBlogsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1.5">Cover Image</label>
-                  <div className="flex items-center gap-6">
+                  <div className="flex flex-col sm:flex-row items-center gap-6">
                     {formData.coverImage && (
-                      <div className="relative w-32 h-20 rounded-lg overflow-hidden border border-slate-200 shrink-0">
+                      <div className="relative w-full sm:w-32 h-32 sm:h-24 rounded-lg overflow-hidden border border-slate-200 shrink-0">
                         <img src={formData.coverImage.startsWith('http') || formData.coverImage.startsWith('data:') ? formData.coverImage : `http://localhost:5000${formData.coverImage}`} alt="Cover" className="w-full h-full object-cover" />
                       </div>
                     )}
-                    <label className="flex-1 flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-200 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group">
-                      <Upload className="h-6 w-6 text-slate-400 group-hover:text-indigo-500 transition-colors mb-2" />
-                      <span className="text-sm font-medium text-slate-600">Click to upload image</span>
-                      <span className="text-xs text-slate-400 mt-1">JPG, PNG, WebP (Max 5MB)</span>
-                      <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                    </label>
+                    <div className="flex-1 w-full space-y-3">
+                      <input
+                        type="url"
+                        placeholder="Paste an Image URL (e.g. from Unsplash)..."
+                        value={(formData.coverImage.startsWith('data:') || formData.coverImage.startsWith('/uploads') || formData.coverImage.startsWith('\\uploads')) ? '' : formData.coverImage}
+                        onChange={e => setFormData({...formData, coverImage: e.target.value})}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm"
+                      />
+                      <div className="flex items-center gap-4 text-xs text-slate-400 font-semibold uppercase">
+                        <span className="flex-1 h-px bg-slate-200"></span> OR <span className="flex-1 h-px bg-slate-200"></span>
+                      </div>
+                      <label className="flex flex-col items-center justify-center py-4 border-2 border-dashed border-slate-200 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group">
+                        <Upload className="h-5 w-5 text-slate-400 group-hover:text-indigo-500 transition-colors mb-1" />
+                        <span className="text-sm font-medium text-slate-600">Upload Local Image</span>
+                        <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -439,7 +466,7 @@ export default function AdminBlogsPage() {
                       <Edit className="w-4 h-4" />
                     </button>
                     <button 
-                      onClick={() => handleDelete(blog._id)}
+                      onClick={() => handleDeleteClick(blog._id)}
                       className="w-8 h-8 rounded-lg bg-slate-50 text-slate-600 hover:bg-red-50 hover:text-red-600 flex items-center justify-center transition-colors"
                       title="Delete"
                     >
@@ -464,13 +491,21 @@ export default function AdminBlogsPage() {
                     </div>
                   )}
                   {blog.status === 'Published' && (
-                    <Link
-                      to={`/blog/${blog.slug}`}
-                      target="_blank"
-                      className="px-3 py-1.5 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
-                    >
-                      View Live <ExternalLink className="w-3 h-3" />
-                    </Link>
+                    <div className="flex gap-1.5 items-center">
+                      <button 
+                        onClick={() => handleUpdateStatus(blog._id, 'Draft')}
+                        className="px-3 py-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-lg text-xs font-semibold transition-colors"
+                      >
+                        Unpublish
+                      </button>
+                      <Link
+                        to={`/blog/${blog.slug}`}
+                        target="_blank"
+                        className="px-3 py-1.5 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                      >
+                        View Live <ExternalLink className="w-3 h-3" />
+                      </Link>
+                    </div>
                   )}
                 </div>
               </div>
@@ -480,26 +515,34 @@ export default function AdminBlogsPage() {
       )}
 
       {totalPages > 1 && !loading && (
-        <div className="flex items-center justify-between px-6 py-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+        <div className="flex items-center justify-between pt-6 border-t border-slate-200 mt-8">
           <span className="text-sm text-slate-500 font-medium">Page {page} of {totalPages}</span>
           <div className="flex gap-2">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 transition"
+              className="px-4 py-2 rounded-xl text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 transition text-slate-700"
             >
               Previous
             </button>
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 transition"
+              className="px-4 py-2 rounded-xl text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 transition text-slate-700"
             >
               Next
             </button>
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+      />
     </div>
   );
 }

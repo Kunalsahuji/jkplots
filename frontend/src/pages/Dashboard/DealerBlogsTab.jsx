@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import api from "../../utils/api";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 export default function DealerBlogsTab() {
   const [blogs, setBlogs] = useState([]);
@@ -35,6 +36,13 @@ export default function DealerBlogsTab() {
   });
   const [saving, setSaving] = useState(false);
 
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {}
+  });
+
   useEffect(() => {
     fetchBlogs();
   }, []);
@@ -53,8 +61,16 @@ export default function DealerBlogsTab() {
     }
   };
 
+  const handleDeleteClick = (id) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete Article",
+      message: "Are you sure you want to delete this article? This action cannot be undone.",
+      onConfirm: () => handleDelete(id)
+    });
+  };
+
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this article?")) return;
     try {
       const { data } = await api.delete(`/blogs/author/${id}`);
       if (data.success) {
@@ -210,18 +226,29 @@ export default function DealerBlogsTab() {
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-muted-foreground mb-1.5">Cover Image</label>
-                  <div className="flex items-center gap-6">
+                  <div className="flex flex-col sm:flex-row items-center gap-6">
                     {formData.coverImage && (
-                      <div className="relative w-32 h-20 rounded-lg overflow-hidden border border-border shrink-0">
+                      <div className="relative w-full sm:w-32 h-32 sm:h-24 rounded-lg overflow-hidden border border-border shrink-0">
                         <img src={formData.coverImage.startsWith('http') || formData.coverImage.startsWith('data:') ? formData.coverImage : `http://localhost:5000${formData.coverImage}`} alt="Cover" className="w-full h-full object-cover" />
                       </div>
                     )}
-                    <label className="flex-1 flex flex-col items-center justify-center p-6 border-2 border-dashed border-border rounded-xl hover:bg-secondary transition-colors cursor-pointer group">
-                      <Upload className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors mb-2" />
-                      <span className="text-sm font-medium">Click to upload image</span>
-                      <span className="text-xs text-muted-foreground mt-1">JPG, PNG, WebP (Max 5MB)</span>
-                      <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                    </label>
+                    <div className="flex-1 w-full space-y-3">
+                      <input
+                        type="url"
+                        placeholder="Paste an Image URL (e.g. from Unsplash)..."
+                        value={(formData.coverImage.startsWith('data:') || formData.coverImage.startsWith('/uploads') || formData.coverImage.startsWith('\\uploads')) ? '' : formData.coverImage}
+                        onChange={e => setFormData({...formData, coverImage: e.target.value})}
+                        className="w-full px-4 py-2.5 rounded-xl border border-border bg-background focus:border-primary outline-none transition-all text-sm"
+                      />
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground font-semibold uppercase">
+                        <span className="flex-1 h-px bg-border"></span> OR <span className="flex-1 h-px bg-border"></span>
+                      </div>
+                      <label className="flex flex-col items-center justify-center py-4 border-2 border-dashed border-border rounded-xl hover:bg-secondary transition-colors cursor-pointer group">
+                        <Upload className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors mb-1" />
+                        <span className="text-sm font-medium">Upload Local Image</span>
+                        <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -391,7 +418,7 @@ export default function DealerBlogsTab() {
                       <Edit className="w-3.5 h-3.5" />
                     </button>
                     <button 
-                      onClick={() => handleDelete(blog._id)}
+                      onClick={() => handleDeleteClick(blog._id)}
                       className="w-7 h-7 rounded bg-secondary text-muted-foreground hover:bg-destructive/10 hover:text-destructive flex items-center justify-center transition-colors"
                       title="Delete"
                     >
@@ -416,26 +443,34 @@ export default function DealerBlogsTab() {
       )}
 
       {totalPages > 1 && !loading && (
-        <div className="flex items-center justify-between px-5 py-3 bg-card rounded-2xl border border-border shadow-sm">
+        <div className="flex items-center justify-between pt-6 border-t border-border mt-8">
           <span className="text-xs text-muted-foreground font-medium">Page {page} of {totalPages}</span>
           <div className="flex gap-2">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1.5 rounded-lg border border-border text-xs font-semibold hover:bg-secondary disabled:opacity-50 transition"
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-secondary disabled:opacity-50 transition text-foreground"
             >
               Previous
             </button>
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-3 py-1.5 rounded-lg border border-border text-xs font-semibold hover:bg-secondary disabled:opacity-50 transition"
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-secondary disabled:opacity-50 transition text-foreground"
             >
               Next
             </button>
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+      />
     </motion.div>
   );
 }

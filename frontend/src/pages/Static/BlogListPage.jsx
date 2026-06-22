@@ -162,20 +162,20 @@ export default function BlogListPage() {
           
           if (totalPages > 1 && !loading) {
             return (
-              <div className="mt-12 flex items-center justify-between px-6 py-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+              <div className="mt-12 flex items-center justify-between pt-8 border-t border-slate-200">
                 <span className="text-sm text-slate-500 font-medium">Page {page} of {totalPages}</span>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                    className="px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 transition-colors text-slate-700"
                   >
                     Previous
                   </button>
                   <button
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
-                    className="px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                    className="px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 transition-colors text-slate-700"
                   >
                     Next
                   </button>
