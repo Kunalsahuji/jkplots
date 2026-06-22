@@ -43,6 +43,7 @@ const AdminReviewsPage = lazy(() => import('@/pages/Admin/AdminReviewsPage'));
 const AdminLegalPage = lazy(() => import('@/pages/Admin/AdminLegalPage'));
 const AdminSettingsPage = lazy(() => import('@/pages/Admin/AdminSettingsPage'));
 const EditPropertyPage = lazy(() => import('@/pages/Properties/EditPropertyPage'));
+const ReviewsPage = lazy(() => import('@/pages/Reviews/ReviewsPage'));
 const AboutPage = lazy(() => import('@/pages/Static/AboutPage'));
 const ContactPage = lazy(() => import('@/pages/Static/ContactPage'));
 const PrivacyPage = lazy(() => import('@/pages/Static/PrivacyPage'));
@@ -143,6 +144,9 @@ export default function AppRoutes() {
                 {/* Public */}
                 <Route path="/" element={
                     <Suspense fallback={<PageSkeleton />}><HomePage /></Suspense>
+                } />
+                <Route path="/reviews" element={
+                    <Suspense fallback={<PageSkeleton />}><ReviewsPage /></Suspense>
                 } />
                 <Route path="/properties" element={
                     <Suspense fallback={

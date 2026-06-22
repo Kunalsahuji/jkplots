@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const {
     getReviews,
+    getMyReview,
     createReview,
+    deleteMyReview,
     getAdminReviews,
     toggleReviewApproval,
     deleteReview
@@ -12,6 +14,10 @@ const { protect, authorize } = require('../middleware/auth');
 router.route('/')
     .get(getReviews)
     .post(protect, createReview);
+
+router.route('/me')
+    .get(protect, getMyReview)
+    .delete(protect, deleteMyReview);
 
 router.route('/admin')
     .get(protect, authorize('admin', 'superadmin'), getAdminReviews);
