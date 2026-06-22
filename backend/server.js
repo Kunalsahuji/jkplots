@@ -118,6 +118,7 @@ const bannerRoutes = require('./routes/bannerRoutes');
 const legalRoutes = require('./routes/legalRoutes');
 const systemConfigRoutes = require('./routes/systemConfigRoutes');
 const subscriptionPlanRoutes = require('./routes/subscriptionPlanRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 
 app.use('/api/properties', propertyRoutes);
 app.use('/api/users', userRoutes);
@@ -131,6 +132,7 @@ app.use('/api/banners', bannerRoutes);
 app.use('/api/legal', legalRoutes);
 app.use('/api/system-config', systemConfigRoutes);
 app.use('/api/subscription-plans', subscriptionPlanRoutes);
+app.use('/api/reports', reportRoutes);
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

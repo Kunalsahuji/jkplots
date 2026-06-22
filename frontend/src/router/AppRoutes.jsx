@@ -42,6 +42,8 @@ const AdminCitiesPage = lazy(() => import('@/pages/Admin/AdminCitiesPage'));
 const AdminReviewsPage = lazy(() => import('@/pages/Admin/AdminReviewsPage'));
 const AdminLegalPage = lazy(() => import('@/pages/Admin/AdminLegalPage'));
 const AdminBannersPage = lazy(() => import('@/pages/Admin/AdminBannersPage'));
+const AdminFraudPage = lazy(() => import('@/pages/Admin/AdminFraudPage'));
+const PropertyReviewsPage = lazy(() => import('@/pages/Properties/PropertyReviewsPage'));
 const AdminSettingsPage = lazy(() => import('@/pages/Admin/AdminSettingsPage'));
 const EditPropertyPage = lazy(() => import('@/pages/Properties/EditPropertyPage'));
 const ReviewsPage = lazy(() => import('@/pages/Reviews/ReviewsPage'));
@@ -162,6 +164,9 @@ export default function AppRoutes() {
                 <Route path="/properties/:id" element={
                     <Suspense fallback={<PropertyDetailSkeleton />}><PropertyDetailPage /></Suspense>
                 } />
+                <Route path="/properties/:id/reviews" element={
+                    <Suspense fallback={<PageSkeleton />}><PropertyReviewsPage /></Suspense>
+                } />
                 <Route path="/about" element={
                     <Suspense fallback={<PageSkeleton />}><AboutPage /></Suspense>
                 } />
@@ -278,6 +283,9 @@ export default function AppRoutes() {
                 } />
                 <Route path="banners" element={
                     <Suspense fallback={<PageSkeleton />}><AdminBannersPage /></Suspense>
+                } />
+                <Route path="fraud" element={
+                    <Suspense fallback={<PageSkeleton />}><AdminFraudPage /></Suspense>
                 } />
                 <Route path="reviews" element={
                     <Suspense fallback={<PageSkeleton />}><AdminReviewsPage /></Suspense>

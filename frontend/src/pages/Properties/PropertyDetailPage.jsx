@@ -29,6 +29,7 @@ import {
   Eye,
   Pencil,
   Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -106,6 +107,74 @@ export default function PropertyDetailPage() {
   const [newComment, setNewComment] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
   const [editingReviewId, setEditingReviewId] = useState(null);
+
+  // Report Modal states
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("Fraud/Scam");
+  const [reportDesc, setReportDesc] = useState("");
+  const [reportPhone, setReportPhone] = useState("");
+  const [submittingReport, setSubmittingReport] = useState(false);
+  const [hasReported, setHasReported] = useState(false);
+
+  const isMyProperty = !!(user && property && (
+    (property.dealer?._id && property.dealer._id === user._id) || 
+    (property.dealer && property.dealer === user._id) || 
+    (property.dealer?.phone && user.phone && property.dealer.phone === user.phone)
+  ));
+
+  const checkUserReportStatus = async () => {
+    if (!user || !property) return;
+    try {
+      const { data } = await api.get('/reports/my-reports');
+      if (data.success) {
+        const propId = id || property?._id || property?.id;
+        const alreadyReported = data.data.some(r => r.property && (r.property._id === propId || r.property === propId));
+        setHasReported(alreadyReported);
+      }
+    } catch (err) {
+      console.error("Failed to fetch reports status:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (user && property) {
+      checkUserReportStatus();
+    }
+  }, [user, property]);
+
+  // Set default report phone
+  useEffect(() => {
+    if (user) {
+      setReportPhone(user.phone || "");
+    }
+  }, [user]);
+
+  const handleReportSubmit = async (e) => {
+    e.preventDefault();
+    if (!reportDesc.trim()) {
+      toast.error("Please explain the issue.");
+      return;
+    }
+    setSubmittingReport(true);
+    try {
+      const { data } = await api.post("/reports", {
+        propertyId: property?._id || property?.id,
+        reason: reportReason,
+        description: reportDesc.trim(),
+        reporterPhone: reportPhone.trim()
+      });
+      if (data.success) {
+        toast.success("Listing reported successfully. Our administration team will review it.");
+        setIsReportModalOpen(false);
+        setReportDesc("");
+        setHasReported(true);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to submit report");
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
 
   const userExistingReview = reviewsList.find((r) => r.userName === user?.name);
   const showReviewForm = !userExistingReview || editingReviewId;
@@ -753,7 +822,7 @@ export default function PropertyDetailPage() {
               {/* Reviews Feed */}
               {reviewsList.length > 0 ? (
                 <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
-                  {reviewsList.map((r, i) => (
+                  {reviewsList.slice(0, 3).map((r, i) => (
                     <div key={i} className="rounded-xl border border-border/60 bg-secondary/15 p-4 space-y-2">
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-2">
@@ -803,6 +872,15 @@ export default function PropertyDetailPage() {
                       <p className="text-sm leading-relaxed text-muted-foreground">{r.comment}</p>
                     </div>
                   ))}
+                  {reviewsList.length > 3 && (
+                    <div className="pt-2 text-center">
+                      <Link to={`/properties/${property?._id || property?.id}/reviews`}>
+                        <Button variant="outline" size="sm" className="rounded-xl px-5 text-xs font-semibold">
+                          See More Reviews ({reviewsList.length - 3} remaining)
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-6 text-muted-foreground text-sm">
@@ -924,6 +1002,27 @@ export default function PropertyDetailPage() {
                 <Button onClick={handleCall} variant="outline" className="w-full gap-2 rounded-xl">
                   <Phone className="h-4 w-4" /> Call: {displayDealerPhone}
                 </Button>
+                {!isMyProperty && (
+                  hasReported ? (
+                    <div className="w-full mt-2 text-center text-xs font-semibold text-amber-600 bg-amber-50 p-2.5 rounded-xl border border-amber-200/60 flex items-center justify-center gap-1.5">
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500 animate-pulse" /> You have reported this property
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!isAuthenticated) {
+                          toast.error("Please log in to report this listing.");
+                          return;
+                        }
+                        setIsReportModalOpen(true);
+                      }}
+                      className="w-full mt-2 text-center text-xs font-bold text-red-500 hover:text-red-600 flex items-center justify-center gap-1.5 py-2 hover:bg-red-50 rounded-xl border border-dashed border-red-200 transition"
+                    >
+                      <AlertTriangle className="h-3.5 w-3.5" /> Report suspicious listing
+                    </button>
+                  )
+                )}
               </div>
 
               <form onSubmit={handleEnquirySubmit} className="space-y-3 border-t border-border pt-4">
@@ -991,6 +1090,82 @@ export default function PropertyDetailPage() {
           </Button>
         </div>
       </div>
+
+      {/* Report Modal */}
+      {isReportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md bg-background rounded-2xl border border-border p-6 shadow-2xl relative space-y-4 text-slate-800"
+          >
+            <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Report Listing
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Please help us verify this listing. If you suspect false info, scam attempts, or duplication, report it below.
+            </p>
+            <form onSubmit={handleReportSubmit} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Reason Category</label>
+                <select
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                >
+                  <option value="Fraud/Scam">Fraud/Scam</option>
+                  <option value="Incorrect Details">Incorrect Details</option>
+                  <option value="Duplicate Listing">Duplicate Listing</option>
+                  <option value="Sold/Unavailable">Sold/Unavailable</option>
+                  <option value="Spam/Other">Spam/Other</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Your Phone Number (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="Your mobile phone"
+                  value={reportPhone}
+                  onChange={(e) => setReportPhone(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Describe the issue in detail</label>
+                <textarea
+                  required
+                  placeholder="Tell us what is wrong with this listing (e.g. wrong price, dealer asking advance payment before visit, already sold...)"
+                  rows={4}
+                  value={reportDesc}
+                  onChange={(e) => setReportDesc(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="flex gap-2 justify-end pt-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setIsReportModalOpen(false)}
+                  className="rounded-xl"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={submittingReport}
+                  className="bg-red-600 hover:bg-red-700 text-white rounded-xl px-5"
+                >
+                  {submittingReport ? "Submitting..." : "Submit Report"}
+                </Button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </motion.div>
   );
 }

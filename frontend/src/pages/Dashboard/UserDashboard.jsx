@@ -23,7 +23,8 @@ import {
   FileText,
   Menu,
   LogOut,
-  Search
+  Search,
+  AlertTriangle
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PropertyCard } from "@/components/site/PropertyCard";
@@ -54,6 +55,7 @@ export default function UserDashboard() {
       saved: "Saved",
       notifications: "Notifications",
       subscription: "Subscription",
+      reports: "My Reports",
       settings: "Settings"
     };
     return slugMap[slug] || "Overview";
@@ -208,6 +210,31 @@ export default function UserDashboard() {
     }
   };
 
+  // User reports states
+  const [myReports, setMyReports] = useState([]);
+  const [loadingReports, setLoadingReports] = useState(true);
+  const [reportsPage, setReportsPage] = useState(1);
+
+  const fetchMyReports = async () => {
+    setLoadingReports(true);
+    try {
+      const { data } = await api.get("/reports/my-reports");
+      if (data.success) {
+        setMyReports(data.data);
+      }
+    } catch (err) {
+      console.error("Failed to load my reports:", err);
+    } finally {
+      setLoadingReports(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user && activeTab === "My Reports") {
+      fetchMyReports();
+    }
+  }, [user, activeTab]);
+
   // Handle Property Delete
   const handleDeleteProperty = async (id) => {
     if (!window.confirm("Are you sure you want to delete this listing?")) return;
@@ -330,6 +357,7 @@ export default function UserDashboard() {
     { label: "Saved", path: "saved", icon: Heart },
     { label: "Notifications", path: "notifications", icon: Bell },
     { label: "Subscription", path: "subscription", icon: CreditCard },
+    { label: "My Reports", path: "reports", icon: AlertTriangle },
     { label: "Settings", path: "settings", icon: Settings },
   ];
 
@@ -1009,6 +1037,95 @@ export default function UserDashboard() {
               </form>
 
               {isDealer && <KycSection />}
+            </motion.div>
+          )}
+          {/* Tab 8: My Reports */}
+          {activeTab === "My Reports" && (
+            <motion.div
+              key="my-reports"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6"
+            >
+              <div>
+                <h2 className="font-display text-xl font-bold">My Flagged Listings</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Track listings you have reported for validation</p>
+              </div>
+
+              {loadingReports ? (
+                <div className="h-40 flex items-center justify-center text-sm text-muted-foreground animate-pulse">
+                  Loading reports...
+                </div>
+              ) : myReports.length === 0 ? (
+                <div className="rounded-3xl border border-dashed border-border bg-card p-12 text-center">
+                  <AlertTriangle className="h-10 w-10 mx-auto text-muted-foreground mb-3 font-semibold" />
+                  <p className="text-sm font-semibold text-foreground">No reports filed</p>
+                  <p className="text-xs text-muted-foreground mt-1">If you spot any suspicious, duplicate or incorrect listings, report them directly from the property details page.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-4">
+                    {getPaginated(myReports, reportsPage, itemsPerPage).map((r) => (
+                      <div
+                        key={r._id}
+                        className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4 text-slate-800"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                          <div className="flex gap-3">
+                            <div className="h-16 w-20 shrink-0 overflow-hidden rounded-xl border border-border bg-muted">
+                              <img
+                                src={r.property?.photos && r.property.photos[0] ? (r.property.photos[0].startsWith('http') ? r.property.photos[0] : `http://localhost:5000${r.property.photos[0]}`) : "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80"}
+                                alt={r.property?.title || "Property"}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                            <div>
+                              <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider mb-1 ${
+                                r.status === 'Pending' ? 'bg-red-50 text-red-700 border border-red-100' :
+                                r.status === 'Reviewed' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' :
+                                'bg-slate-100 text-slate-700 border border-slate-200'
+                              }`}>
+                                {r.status}
+                              </span>
+                              <h4 className="text-sm font-bold text-foreground line-clamp-1">
+                                {r.property ? (
+                                  <Link to={`/properties/${r.property._id}`} className="hover:text-primary hover:underline">
+                                    {r.property.title}
+                                  </Link>
+                                ) : (
+                                  <span className="text-red-500 line-through">Listing removed by administration</span>
+                                )}
+                              </h4>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                Reason: <span className="font-semibold text-foreground/80">{r.reason}</span> · Reported on {new Date(r.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-xs bg-secondary/25 border border-border/50 rounded-xl p-3.5 space-y-2">
+                          <div>
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Your Complaint Details:</span>
+                            <p className="text-foreground/95 leading-relaxed mt-0.5">{r.description}</p>
+                          </div>
+                          {r.adminResponse && (
+                            <div className="border-t border-border/50 pt-2 mt-2">
+                              <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block">Official Admin Response:</span>
+                              <p className="text-foreground/95 font-semibold leading-relaxed mt-0.5">{r.adminResponse}</p>
+                              {r.resolvedAt && (
+                                <span className="text-[9px] text-muted-foreground mt-1 block">Resolved on {new Date(r.resolvedAt).toLocaleDateString()}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {renderPagination(reportsPage, setReportsPage, myReports.length)}
+                </>
+              )}
             </motion.div>
           )}
 
