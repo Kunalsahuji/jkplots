@@ -19,7 +19,7 @@ const saveBase64Image = async (base64Str, folderName = 'blogs') => {
 
         if (cloudName && apiKey && apiSecret) {
             const timestamp = Math.round(new Date().getTime() / 1000);
-            const signatureStr = `timestamp=${timestamp}${apiSecret}`;
+            const signatureStr = `folder=${folderName}&timestamp=${timestamp}${apiSecret}`;
             const signature = crypto.createHash('sha1').update(signatureStr).digest('hex');
 
             const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;

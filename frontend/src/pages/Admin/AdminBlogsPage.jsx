@@ -12,6 +12,7 @@ export default function AdminBlogsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -154,6 +155,11 @@ export default function AdminBlogsPage() {
                           b.author?.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || b.status.toLowerCase() === statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;
+  }).sort((a, b) => {
+    if (sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
+    if (sortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+    if (sortBy === 'views') return b.views - a.views;
+    return 0;
   });
 
   const totalPages = Math.ceil(filteredBlogs.length / itemsPerPage);
@@ -288,7 +294,7 @@ export default function AdminBlogsPage() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 sticky bottom-6">
+          <div className="flex justify-end gap-3 mt-8 border-t border-slate-200 pt-6">
             <button
               type="button"
               onClick={() => setIsEditing(false)}
@@ -351,6 +357,15 @@ export default function AdminBlogsPage() {
           <option value="pending">Pending Review</option>
           <option value="draft">Drafts</option>
           <option value="rejected">Rejected</option>
+        </select>
+        <select
+          value={sortBy}
+          onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
+          className="text-sm bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 font-semibold outline-none"
+        >
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="views">Most Viewed</option>
         </select>
       </div>
 

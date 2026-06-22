@@ -7,6 +7,9 @@ export default function BlogListPage() {
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 6;
 
   useEffect(() => {
     fetchBlogs();
@@ -59,7 +62,19 @@ export default function BlogListPage() {
         </div>
       </div>
 
-      <div className="container-px mx-auto max-w-7xl py-16">
+      <div className="container-px mx-auto max-w-7xl py-12">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
+          <h2 className="text-2xl font-bold text-slate-800">Latest Articles</h2>
+          <select
+            value={sortBy}
+            onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
+            className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20"
+          >
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="views">Most Viewed</option>
+          </select>
+        </div>
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="h-10 w-10 text-indigo-500 animate-spin mb-4" />
@@ -75,7 +90,15 @@ export default function BlogListPage() {
           </div>
         ) : (
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {blogs.map(blog => (
+            {[...blogs]
+              .sort((a, b) => {
+                if (sortBy === 'newest') return new Date(b.publishedAt || b.createdAt) - new Date(a.publishedAt || a.createdAt);
+                if (sortBy === 'oldest') return new Date(a.publishedAt || a.createdAt) - new Date(b.publishedAt || b.createdAt);
+                if (sortBy === 'views') return b.views - a.views;
+                return 0;
+              })
+              .slice((page - 1) * itemsPerPage, page * itemsPerPage)
+              .map(blog => (
               <Link 
                 key={blog._id} 
                 to={`/blog/${blog.slug}`}
@@ -125,6 +148,44 @@ export default function BlogListPage() {
             ))}
           </div>
         )}
+
+        {/* Pagination */}
+        {(() => {
+          const sortedBlogs = [...blogs].sort((a, b) => {
+            if (sortBy === 'newest') return new Date(b.publishedAt || b.createdAt) - new Date(a.publishedAt || a.createdAt);
+            if (sortBy === 'oldest') return new Date(a.publishedAt || a.createdAt) - new Date(b.publishedAt || b.createdAt);
+            if (sortBy === 'views') return b.views - a.views;
+            return 0;
+          });
+          
+          const totalPages = Math.ceil(sortedBlogs.length / itemsPerPage);
+          
+          if (totalPages > 1 && !loading) {
+            return (
+              <div className="mt-12 flex items-center justify-between px-6 py-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <span className="text-sm text-slate-500 font-medium">Page {page} of {totalPages}</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            );
+          }
+          return null;
+        })()}
+
       </div>
     </div>
   );

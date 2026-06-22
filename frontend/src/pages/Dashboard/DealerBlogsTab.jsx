@@ -14,6 +14,7 @@ export default function DealerBlogsTab() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -143,6 +144,11 @@ export default function DealerBlogsTab() {
     const matchesSearch = b.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || b.status.toLowerCase() === statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;
+  }).sort((a, b) => {
+    if (sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
+    if (sortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+    if (sortBy === 'views') return b.views - a.views;
+    return 0;
   });
 
   const totalPages = Math.ceil(filteredBlogs.length / itemsPerPage);
@@ -251,7 +257,7 @@ export default function DealerBlogsTab() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3">
+          <div className="flex justify-end gap-3 mt-8 border-t border-border pt-6">
             <button
               type="button"
               onClick={() => setIsEditing(false)}
@@ -319,6 +325,15 @@ export default function DealerBlogsTab() {
           <option value="pending">Pending Review</option>
           <option value="draft">Drafts</option>
           <option value="rejected">Rejected</option>
+        </select>
+        <select
+          value={sortBy}
+          onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
+          className="text-sm bg-secondary border-none rounded-xl px-4 py-2 font-semibold outline-none focus:ring-2 focus:ring-primary/20"
+        >
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="views">Most Viewed</option>
         </select>
       </div>
 
