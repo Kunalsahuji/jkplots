@@ -9,6 +9,7 @@ export default function SubscriptionTab() {
   const { user } = useAuth();
   const [plans, setPlans] = useState([]);
   const [mySub, setMySub] = useState(null);
+  const [transactions, setTransactions] = useState([]);
   const [usage, setUsage] = useState({ used: 0, limit: 1, remaining: 1 });
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
@@ -20,9 +21,10 @@ export default function SubscriptionTab() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [plansRes, mySubRes] = await Promise.all([
+      const [plansRes, mySubRes, txRes] = await Promise.all([
         api.get("/subscription-plans/active"),
-        api.get("/subscription-plans/my-subscription")
+        api.get("/subscription-plans/my-subscription"),
+        api.get("/transactions/my-transactions")
       ]);
       
       if (plansRes.data.success) {
@@ -33,6 +35,10 @@ export default function SubscriptionTab() {
         setMySub(mySubRes.data.data.activeSubscription);
         setUsage(mySubRes.data.data.usage);
       }
+
+      if (txRes.data.success) {
+        setTransactions(txRes.data.data);
+      }
     } catch (err) {
       toast.error("Failed to load subscription details");
     } finally {
@@ -40,30 +46,43 @@ export default function SubscriptionTab() {
     }
   };
 
-  const handleSubscribe = async (plan) => {
+  const handleSubscribe = async (plan, method = 'Razorpay') => {
     try {
-      setProcessingId(plan._id);
+      setProcessingId(`${plan._id}-${method}`);
       
-      const { data } = await api.post("/subscription-plans/create-order", { planId: plan._id });
+      // Use the robust transaction API which tracks offline/online status
+      const { data } = await api.post("/transactions", { 
+        itemType: 'Subscription',
+        subscriptionPlanId: plan._id,
+        paymentMethod: method
+      });
       
+      // Handle free plan assignment if the transaction resolves it immediately
+      if (data.razorpayOrder === null && method === 'Offline') {
+        toast.success("Offline payment request submitted! Please contact Admin to verify your payment.");
+        fetchData();
+        return;
+      }
+
       if (data.isFree) {
-        toast.success(data.message);
+        toast.success(data.message || "Free plan activated");
         fetchData();
         return;
       }
 
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_YourKeyHere",
-        amount: data.amount,
-        currency: data.currency,
+        amount: data.razorpayOrder.amount,
+        currency: data.razorpayOrder.currency,
         name: "JKPLOT Premium",
         description: `Subscription: ${plan.name}`,
-        order_id: data.orderId,
+        order_id: data.razorpayOrder.id,
         handler: async function (response) {
           try {
-            const verifyRes = await api.post("/subscription-plans/verify-payment", {
-              ...response,
-              planId: plan._id
+            const verifyRes = await api.post("/transactions/verify", {
+              transactionId: data.data._id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature
             });
             if (verifyRes.data.success) {
               toast.success("Subscription activated successfully!");
@@ -88,7 +107,7 @@ export default function SubscriptionTab() {
       });
       rzp.open();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to initiate payment");
+      toast.error(err.response?.data?.message || err.response?.data?.error || "Failed to initiate payment");
     } finally {
       setProcessingId(null);
     }
@@ -207,32 +226,101 @@ export default function SubscriptionTab() {
                   ))}
                 </ul>
 
-                <button
-                  onClick={() => handleSubscribe(plan)}
-                  disabled={isCurrent || processingId === plan._id}
-                  className={`w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all ${
-                    isCurrent 
-                      ? 'bg-secondary text-muted-foreground cursor-not-allowed'
-                      : plan.isPopular
-                        ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-md'
-                        : 'bg-slate-900 text-white hover:bg-slate-800 shadow-md'
-                  }`}
-                >
-                  {processingId === plan._id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : isCurrent ? (
-                    "Active Plan"
+                <div className="flex flex-col gap-2">
+                  {isCurrent ? (
+                    <button
+                      disabled
+                      className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all bg-secondary text-muted-foreground cursor-not-allowed"
+                    >
+                      Active Plan
+                    </button>
+                  ) : plan.price === 0 ? (
+                    <button
+                      onClick={() => handleSubscribe(plan, 'Razorpay')}
+                      disabled={processingId !== null}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all bg-primary text-primary-foreground hover:bg-primary/90 shadow-md"
+                    >
+                      {processingId === `${plan._id}-Razorpay` ? <Loader2 className="h-4 w-4 animate-spin" /> : "Activate Free Plan"}
+                    </button>
                   ) : (
-                    <>
-                      <CreditCard className="h-4 w-4" /> Subscribe Now
-                    </>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => handleSubscribe(plan, 'Razorpay')}
+                        disabled={processingId !== null}
+                        className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all ${
+                          plan.isPopular
+                            ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-md'
+                            : 'bg-slate-900 text-white hover:bg-slate-800 shadow-md'
+                        }`}
+                      >
+                        {processingId === `${plan._id}-Razorpay` ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>Pay Online</>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleSubscribe(plan, 'Offline')}
+                        disabled={processingId !== null}
+                        className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm"
+                      >
+                        {processingId === `${plan._id}-Offline` ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>Pay Offline</>
+                        )}
+                      </button>
+                    </div>
                   )}
-                </button>
+                </div>
               </div>
             );
           })}
         </div>
       </div>
+
+      {transactions.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm mt-8">
+          <div>
+            <h3 className="font-display text-lg font-bold">Billing History</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Your past transactions and pending payment requests</p>
+          </div>
+          <div className="overflow-x-auto mt-4">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="border-b border-border text-xs uppercase font-bold text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3">Date</th>
+                  <th className="px-4 py-3">Item</th>
+                  <th className="px-4 py-3">Amount</th>
+                  <th className="px-4 py-3">Method</th>
+                  <th className="px-4 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {transactions.map(t => (
+                  <tr key={t._id}>
+                    <td className="px-4 py-3 text-slate-600 font-medium">{new Date(t.createdAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 font-semibold text-slate-800">
+                      {t.itemType}: {t.subscriptionPlan?.name || t.promotionPlan?.name || "Plan"}
+                    </td>
+                    <td className="px-4 py-3 font-bold">₹{t.amount}</td>
+                    <td className="px-4 py-3 text-xs text-slate-500 font-semibold uppercase">{t.paymentMethod}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-block px-2.5 py-1 rounded-md text-xs font-bold ${
+                        t.status === 'Success' ? 'bg-emerald-100 text-emerald-700' :
+                        t.status === 'Pending' ? 'bg-amber-100 text-amber-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {t.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }

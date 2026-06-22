@@ -43,6 +43,7 @@ const AdminReviewsPage = lazy(() => import('@/pages/Admin/AdminReviewsPage'));
 const AdminLegalPage = lazy(() => import('@/pages/Admin/AdminLegalPage'));
 const AdminBannersPage = lazy(() => import('@/pages/Admin/AdminBannersPage'));
 const AdminFraudPage = lazy(() => import('@/pages/Admin/AdminFraudPage'));
+const AdminTransactionsPage = lazy(() => import('@/pages/Admin/AdminTransactionsPage'));
 const PropertyReviewsPage = lazy(() => import('@/pages/Properties/PropertyReviewsPage'));
 const AdminSettingsPage = lazy(() => import('@/pages/Admin/AdminSettingsPage'));
 const EditPropertyPage = lazy(() => import('@/pages/Properties/EditPropertyPage'));
@@ -286,6 +287,9 @@ export default function AppRoutes() {
                 } />
                 <Route path="fraud" element={
                     <Suspense fallback={<PageSkeleton />}><AdminFraudPage /></Suspense>
+                } />
+                <Route path="transactions" element={
+                    <Suspense fallback={<PageSkeleton />}><AdminTransactionsPage /></Suspense>
                 } />
                 <Route path="reviews" element={
                     <Suspense fallback={<PageSkeleton />}><AdminReviewsPage /></Suspense>

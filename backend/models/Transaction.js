@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
 
 const TransactionSchema = new mongoose.Schema({
-    property: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Property',
+    itemType: {
+        type: String,
+        enum: ['Subscription', 'Promotion'],
         required: true
     },
     dealer: {
@@ -11,26 +11,53 @@ const TransactionSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
-    plan: {
+    subscriptionPlan: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'SubscriptionPlan',
+        required: function() { return this.itemType === 'Subscription'; }
+    },
+    promotionPlan: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'PromotionPlan',
-        required: true
+        required: function() { return this.itemType === 'Promotion'; }
+    },
+    property: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Property',
+        required: function() { return this.itemType === 'Promotion'; }
     },
     amount: {
         type: Number,
         required: true
     },
+    paymentMethod: {
+        type: String,
+        enum: ['Razorpay', 'Offline'],
+        required: true
+    },
     razorpayOrderId: {
         type: String,
-        required: true
+        // Only required if method is Razorpay
+        required: function() { return this.paymentMethod === 'Razorpay'; }
     },
     razorpayPaymentId: {
         type: String
     },
+    razorpaySignature: {
+        type: String
+    },
+    offlineReference: {
+        type: String, // e.g., bank transfer UTR number, check number, or simply "Cash"
+        default: ''
+    },
     status: {
         type: String,
-        enum: ['created', 'success', 'failed'],
-        default: 'created'
+        enum: ['Pending', 'Success', 'Failed', 'Rejected'],
+        default: 'Pending'
+    },
+    adminNotes: {
+        type: String,
+        default: ''
     }
 }, {
     timestamps: true

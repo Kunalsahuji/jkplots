@@ -39,8 +39,6 @@ const MENU_GROUPS = [
       { icon: Building2, label: "Dealer Management", path: "/admin/dealers" },
       { icon: Home, label: "Property Management", path: "/admin/properties" },
       { icon: MessageSquare, label: "Enquiries", path: "/admin/enquiries" },
-      { icon: Star, label: "Promotion Plans", path: "/admin/promotions" },
-      { icon: CreditCard, label: "Subscription Plans", path: "/admin/subscriptions" },
       { icon: MapPin, label: "Cities Management", path: "/admin/cities" },
       { icon: ImageIcon, label: "Banners", path: "/admin/banners" },
       { icon: ThumbsUp, label: "Reviews & Feedbacks", path: "/admin/reviews" },
@@ -48,8 +46,11 @@ const MENU_GROUPS = [
     ],
   },
   {
-    title: "SYSTEM",
+    title: "REVENUE & SYSTEM",
     items: [
+      { icon: CreditCard, label: "Subscription Plans", path: "/admin/subscriptions" },
+      { icon: Star, label: "Promotion Plans", path: "/admin/promotions" },
+      { icon: CreditCard, label: "Transactions Logs", path: "/admin/transactions" },
       { icon: FileText, label: "Legal Pages CMS", path: "/admin/legal" },
       { icon: Settings, label: "Settings", path: "/admin/settings" },
     ],

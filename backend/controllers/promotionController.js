@@ -62,11 +62,14 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
 
     // Save transaction as pending/created
     const transaction = await Transaction.create({
+        itemType: 'Promotion',
         property: propertyId,
         dealer: req.user.id,
-        plan: planId,
+        promotionPlan: planId,
+        paymentMethod: 'Razorpay',
         amount: plan.price,
-        razorpayOrderId: order.id
+        razorpayOrderId: order.id,
+        status: 'Pending'
     });
 
     res.status(200).json({
@@ -82,8 +85,8 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
 exports.verifyPayment = asyncHandler(async (req, res, next) => {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, transactionId } = req.body;
 
-    const transaction = await Transaction.findById(transactionId).populate('plan');
-    if (!transaction) {
+    const transaction = await Transaction.findById(transactionId).populate('promotionPlan');
+    if (!transaction || transaction.paymentMethod !== 'Razorpay') {
         return next(new ErrorResponse('Transaction not found', 404));
     }
 
@@ -96,8 +99,9 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
 
     if (expectedSignature === razorpay_signature) {
         // Payment is successful
-        transaction.status = 'success';
+        transaction.status = 'Success';
         transaction.razorpayPaymentId = razorpay_payment_id;
+        transaction.razorpaySignature = razorpay_signature;
         await transaction.save();
 
         // Update Property
@@ -109,7 +113,8 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
                 ? new Date(property.featuredUntil) 
                 : new Date();
             
-            currentExpiry.setDate(currentExpiry.getDate() + transaction.plan.durationInDays);
+            // `promotionPlan` is populated now instead of `plan`
+            currentExpiry.setDate(currentExpiry.getDate() + transaction.promotionPlan.durationInDays);
             property.featuredUntil = currentExpiry;
             await property.save();
         }
@@ -119,7 +124,7 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
             message: 'Payment verified and property promoted successfully'
         });
     } else {
-        transaction.status = 'failed';
+        transaction.status = 'Failed';
         await transaction.save();
         return next(new ErrorResponse('Invalid payment signature', 400));
     }
