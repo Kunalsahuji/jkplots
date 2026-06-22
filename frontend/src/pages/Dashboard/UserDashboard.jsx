@@ -84,8 +84,18 @@ export default function UserDashboard() {
   
   // Keep activeTab in sync with URL
   useEffect(() => {
-    setActiveTab(getTabLabelFromSlug(tab));
-  }, [tab, isAdmin]);
+    const desiredTab = getTabLabelFromSlug(tab);
+    
+    // Protect dealer-only and admin-only tabs from normal users
+    if (!isDealer && !isAdmin) {
+      if (["My Listings", "All Listings", "Promote Property", "Subscription"].includes(desiredTab)) {
+        navigate("/dashboard/overview", { replace: true });
+        return;
+      }
+    }
+    
+    setActiveTab(desiredTab);
+  }, [tab, isAdmin, isDealer, navigate]);
 
   // Handle Tab change
   const handleTabChange = (t) => {
@@ -356,7 +366,7 @@ export default function UserDashboard() {
     { label: "Enquiries", path: "enquiries", icon: MessageSquare },
     { label: "Saved", path: "saved", icon: Heart },
     { label: "Notifications", path: "notifications", icon: Bell },
-    { label: "Subscription", path: "subscription", icon: CreditCard },
+    ...(isDealer ? [{ label: "Subscription", path: "subscription", icon: CreditCard }] : []),
     { label: "My Reports", path: "reports", icon: AlertTriangle },
     { label: "Settings", path: "settings", icon: Settings },
   ];

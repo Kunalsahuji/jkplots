@@ -31,6 +31,7 @@ export default function PromotePropertyTab({ properties, refreshData }) {
   const [filterPurpose, setFilterPurpose] = useState("All");
   const [filterSort, setFilterSort] = useState("Newest");
   const [page, setPage] = useState(1);
+  const [promotedPage, setPromotedPage] = useState(1);
   const itemsPerPage = 6;
 
   useEffect(() => {
@@ -146,6 +147,8 @@ export default function PromotePropertyTab({ properties, refreshData }) {
   const promotedProperties = properties.filter(
     p => p.isFeatured && new Date(p.featuredUntil) > new Date()
   );
+  const totalPromotedPages = Math.ceil(promotedProperties.length / itemsPerPage);
+  const paginatedPromoted = promotedProperties.slice((promotedPage - 1) * itemsPerPage, promotedPage * itemsPerPage);
   
   const normalProperties = properties.filter(
     p => !p.isFeatured || new Date(p.featuredUntil) <= new Date()
@@ -181,7 +184,7 @@ export default function PromotePropertyTab({ properties, refreshData }) {
             <h2 className="text-xl font-bold font-display">Active Promotions</h2>
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {promotedProperties.map((property) => {
+            {paginatedPromoted.map((property) => {
               const daysLeft = Math.ceil((new Date(property.featuredUntil) - new Date()) / (1000 * 60 * 60 * 24));
               return (
                 <div key={property._id} className="relative group flex flex-col h-full rounded-2xl overflow-hidden shadow-soft border border-yellow-200">
@@ -195,6 +198,29 @@ export default function PromotePropertyTab({ properties, refreshData }) {
               );
             })}
           </div>
+          {totalPromotedPages > 1 && (
+            <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
+              <p className="text-xs text-muted-foreground">
+                Showing {((promotedPage - 1) * itemsPerPage) + 1} to {Math.min(promotedPage * itemsPerPage, promotedProperties.length)} of {promotedProperties.length}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPromotedPage(p => Math.max(1, p - 1))}
+                  disabled={promotedPage === 1}
+                  className="h-8 rounded-full border border-border px-3 text-xs font-medium hover:bg-secondary disabled:opacity-50 transition"
+                >
+                  Prev
+                </button>
+                <button
+                  onClick={() => setPromotedPage(p => Math.min(totalPromotedPages, p + 1))}
+                  disabled={promotedPage === totalPromotedPages}
+                  className="h-8 rounded-full border border-border px-3 text-xs font-medium hover:bg-secondary disabled:opacity-50 transition"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </section>
       )}
 
