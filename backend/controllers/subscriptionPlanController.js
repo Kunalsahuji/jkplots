@@ -70,6 +70,13 @@ exports.getMySubscription = async (req, res) => {
         // Count properties listed by user
         activeCount = await Property.countDocuments({ dealer: req.user.id });
 
+        // Count active premium highlights (featured properties)
+        const featuredCount = await Property.countDocuments({
+            dealer: req.user.id,
+            isFeatured: true,
+            featuredUntil: { $gt: new Date() }
+        });
+
         // Load System Config for free tier limits
         let config = await SystemConfig.findOne();
         if (!config) config = { isSubscriptionEnforced: false, freeListingLimit: 50 };
@@ -88,7 +95,8 @@ exports.getMySubscription = async (req, res) => {
                 usage: {
                     used: activeCount,
                     limit: totalLimit,
-                    remaining: Math.max(0, totalLimit - activeCount)
+                    remaining: Math.max(0, totalLimit - activeCount),
+                    featuredCount
                 }
             }
         });

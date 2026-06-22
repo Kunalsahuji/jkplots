@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Check, Loader2, CreditCard } from "lucide-react";
+import { Check, Loader2, CreditCard, Download } from "lucide-react";
 import api from "@/utils/api";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -119,6 +119,63 @@ export default function SubscriptionTab() {
     }
   };
 
+  const handleDownloadReceipt = (tx) => {
+    const itemName = tx.subscriptionPlan?.name || tx.promotionPlan?.name || tx.plan?.name || "Premium Plan";
+    const itemType = tx.itemType ? tx.itemType : tx.plan ? "Promotion" : "Subscription";
+    const dateStr = new Date(tx.createdAt).toLocaleDateString();
+    const amountVal = tx.amount;
+    const refId = tx.razorpayPaymentId || tx.razorpayOrderId || tx.offlineReference || tx._id;
+    const methodStr = tx.paymentMethod || 'Razorpay';
+
+    const receiptHtml = `
+      <html>
+        <head>
+          <title>Receipt - JKPLOT</title>
+          <style>
+            body { font-family: 'Inter', sans-serif; color: #1e293b; padding: 40px; max-width: 600px; margin: 0 auto; line-height: 1.5; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-b: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; }
+            .logo { font-size: 24px; font-weight: 800; color: #0f172a; }
+            .receipt-title { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; font-weight: 700; }
+            .details { margin-bottom: 30px; }
+            .row { display: flex; justify-content: space-between; padding: 10px 0; border-b: 1px solid #f1f5f9; }
+            .label { color: #64748b; font-size: 14px; }
+            .value { font-weight: 600; font-size: 14px; }
+            .total-row { display: flex; justify-content: space-between; margin-top: 20px; padding: 15px 0; border-t: 2px solid #0f172a; border-b: 2px solid #0f172a; font-weight: 800; font-size: 18px; }
+            .footer { text-align: center; margin-top: 50px; color: #94a3b8; font-size: 12px; }
+            .btn-print { background: #0f172a; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 20px; display: inline-block; }
+            @media print { .btn-print { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="logo">JKPLOT HAVEN</div>
+            <div class="receipt-title">Payment Receipt</div>
+          </div>
+          <div class="details">
+            <div class="row"><span class="label">Date:</span><span class="value">${dateStr}</span></div>
+            <div class="row"><span class="label">Receipt No / TX ID:</span><span class="value">${refId}</span></div>
+            <div class="row"><span class="label">Customer Name:</span><span class="value">${user?.name || 'JKPlot Dealer'}</span></div>
+            <div class="row"><span class="label">Mobile Number:</span><span class="value">${user?.phone || 'N/A'}</span></div>
+            <div class="row"><span class="label">Item Purchased:</span><span class="value">${itemType}: ${itemName}</span></div>
+            <div class="row"><span class="label">Payment Method:</span><span class="value">${methodStr}</span></div>
+            <div class="row"><span class="label">Status:</span><span class="value" style="color: #10b981; text-transform: uppercase;">Success</span></div>
+            <div class="total-row"><span>Total Paid</span><span>₹${amountVal}</span></div>
+          </div>
+          <center>
+            <button class="btn-print" onclick="window.print()">Print / Save PDF</button>
+          </center>
+          <div class="footer">
+            Thank you for partnering with JKPLOT. For support, reach out to contact@jkplot.com
+          </div>
+        </body>
+      </html>
+    `;
+
+    const win = window.open("", "_blank");
+    win.document.write(receiptHtml);
+    win.document.close();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -174,6 +231,12 @@ export default function SubscriptionTab() {
                 <span>Remaining Credits</span>
                 <span className={`font-semibold ${usage.remaining === 0 ? 'text-destructive' : 'text-emerald-600'}`}>
                   {usage.remaining}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs pt-1 border-t border-border mt-2">
+                <span>Active Premium Highlights</span>
+                <span className="font-semibold text-amber-600">
+                  {usage.featuredCount || 0} active
                 </span>
               </div>
             </div>
@@ -324,6 +387,7 @@ export default function SubscriptionTab() {
                   <th className="px-4 py-3">Amount</th>
                   <th className="px-4 py-3">Method</th>
                   <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Receipt</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -377,12 +441,24 @@ export default function SubscriptionTab() {
                           {status}
                         </span>
                       </td>
+                      <td className="px-4 py-3">
+                        {isSuccess ? (
+                          <button
+                            onClick={() => handleDownloadReceipt(t)}
+                            className="text-xs text-primary font-bold hover:underline flex items-center gap-1.5"
+                          >
+                            <Download size={14} className="text-primary" /> Receipt
+                          </button>
+                        ) : (
+                          <span className="text-xs text-slate-400 font-medium">-</span>
+                        )}
+                      </td>
                         </tr>
                       );
                     })}
                     {totalPages > 1 && (
                       <tr>
-                        <td colSpan="5" className="px-4 py-3 bg-secondary/30">
+                        <td colSpan="6" className="px-4 py-3 bg-secondary/30">
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-muted-foreground font-medium">Page {page} of {totalPages}</span>
                             <div className="flex gap-2">
