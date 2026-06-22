@@ -215,11 +215,17 @@ exports.getProperties = async (req, res, next) => {
 // @access  Public
 exports.getProperty = async (req, res, next) => {
     try {
-        const property = await Property.findById(req.params.id);
+        const property = await Property.findById(req.params.id).lean();
 
         if (!property) {
             return next(new ErrorResponse(`Property not found with id of ${req.params.id}`, 404));
         }
+
+        // Fetch approved reviews for this property
+        const Review = require('../models/Review');
+        const reviews = await Review.find({ property: req.params.id, status: 'Approved' }).sort('-createdAt');
+        
+        property.reviews = reviews;
 
         res.status(200).json({
             success: true,

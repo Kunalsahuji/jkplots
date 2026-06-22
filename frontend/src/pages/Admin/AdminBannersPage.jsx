@@ -243,7 +243,7 @@ export default function AdminBannersPage() {
         title="Delete Banner"
         message="Are you sure you want to permanently delete this banner? It will instantly be removed from all public pages."
         onConfirm={confirmDelete}
-        onCancel={() => setDeleteDialog({ isOpen: false, id: null })}
+        onClose={() => setDeleteDialog({ isOpen: false, id: null })}
       />
     </div>
   );
