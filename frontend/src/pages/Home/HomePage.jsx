@@ -236,7 +236,17 @@ export default function HomePage() {
   const featured = activeProperties.filter((p) => p.isFeatured && new Date(p.featuredUntil) > new Date()).slice(0, 8);
   const all = activeProperties.filter((p) => !p.isFeatured || new Date(p.featuredUntil) <= new Date()).slice(0, 8);
 
-  const activeBanners = heroBanners.length > 0 ? heroBanners : heroImages.map(img => ({ imageUrl: img }));
+  const heroImageMap = {
+    "heroImg": heroImg,
+    "prop1": prop1,
+    "prop2": prop2,
+    "prop3": prop3
+  };
+
+  const activeBanners = heroBanners.map(b => ({ 
+    ...b, 
+    imageUrl: b.isDefaultAsset && heroImageMap[b.assetKey] ? heroImageMap[b.assetKey] : b.imageUrl 
+  }));
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -304,7 +314,7 @@ export default function HomePage() {
               )}
             </h1>
             <p className="mt-4 max-w-xl text-sm text-background/85 sm:text-base md:text-lg">
-              Verified villas, apartments, plots and commercial spaces across Jammu &amp; Kashmir — handpicked, transparent, real.
+              {activeBanners[bgIndex]?.description || "Verified villas, apartments, plots and commercial spaces across Jammu & Kashmir — handpicked, transparent, real."}
             </p>
           </div>
 

@@ -6,6 +6,16 @@ const ErrorResponse = require('../utils/errorResponse');
 // @access  Public
 exports.getActiveBanners = async (req, res, next) => {
     try {
+        const count = await Banner.countDocuments();
+        if (count === 0) {
+            await Banner.insertMany([
+                { title: 'Find your place in the valley.', description: 'Verified villas, apartments, plots and commercial spaces across Jammu & Kashmir — handpicked, transparent, real.', isDefaultAsset: true, assetKey: 'heroImg' },
+                { title: 'Premium Villas in Srinagar', description: 'Explore handpicked independent villas in top localities.', isDefaultAsset: true, assetKey: 'prop1' },
+                { title: 'Commercial Spaces for Growth', description: 'Set up your business in the most promising locations.', isDefaultAsset: true, assetKey: 'prop2' },
+                { title: 'Trusted Plot Listings', description: 'Invest securely with our verified plot listings.', isDefaultAsset: true, assetKey: 'prop3' }
+            ]);
+        }
+
         const { placement } = req.query;
         let query = { isActive: true };
         
@@ -61,6 +71,16 @@ exports.trackBannerClick = async (req, res, next) => {
 // @access  Private/Admin
 exports.getAdminBanners = async (req, res, next) => {
     try {
+        const count = await Banner.countDocuments();
+        if (count === 0) {
+            await Banner.insertMany([
+                { title: 'Find your place in the valley.', description: 'Verified villas, apartments, plots and commercial spaces across Jammu & Kashmir — handpicked, transparent, real.', isDefaultAsset: true, assetKey: 'heroImg' },
+                { title: 'Premium Villas in Srinagar', description: 'Explore handpicked independent villas in top localities.', isDefaultAsset: true, assetKey: 'prop1' },
+                { title: 'Commercial Spaces for Growth', description: 'Set up your business in the most promising locations.', isDefaultAsset: true, assetKey: 'prop2' },
+                { title: 'Trusted Plot Listings', description: 'Invest securely with our verified plot listings.', isDefaultAsset: true, assetKey: 'prop3' }
+            ]);
+        }
+
         const banners = await Banner.find().sort('-createdAt');
 
         res.status(200).json({

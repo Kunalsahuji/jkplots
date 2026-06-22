@@ -3,6 +3,17 @@ import { Plus, Pencil, Trash2, Link as LinkIcon, Image as ImageIcon, CheckCircle
 import { toast } from "sonner";
 import api from "@/utils/api";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import heroImg from "@/assets/hero-kashmir.jpg";
+import prop1 from "@/assets/prop-1.jpg";
+import prop2 from "@/assets/prop-2.jpg";
+import prop3 from "@/assets/prop-3.jpg";
+
+const heroImageMap = {
+  "heroImg": heroImg,
+  "prop1": prop1,
+  "prop2": prop2,
+  "prop3": prop3
+};
 
 export default function AdminBannersPage() {
   const [banners, setBanners] = useState([]);
@@ -13,6 +24,7 @@ export default function AdminBannersPage() {
   
   const [formData, setFormData] = useState({
     title: "",
+    description: "",
     imageUrl: "",
     targetUrl: "",
     placement: "homepage_hero",
@@ -41,6 +53,7 @@ export default function AdminBannersPage() {
     setEditMode(false);
     setFormData({
       title: "",
+      description: "",
       imageUrl: "",
       targetUrl: "",
       placement: "homepage_hero",
@@ -55,7 +68,8 @@ export default function AdminBannersPage() {
     setFormData({
       _id: b._id,
       title: b.title,
-      imageUrl: b.imageUrl,
+      description: b.description || "",
+      imageUrl: b.imageUrl || "",
       targetUrl: b.targetUrl,
       placement: b.placement,
       isActive: b.isActive,
@@ -127,8 +141,14 @@ export default function AdminBannersPage() {
           banners.map((b) => (
             <div key={b._id} className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm flex flex-col relative group">
               {/* Image Preview */}
-              <div className="h-32 w-full bg-slate-100 relative overflow-hidden">
-                <img src={b.imageUrl} alt={b.title} className="w-full h-full object-cover" />
+              <div className="h-32 w-full bg-slate-900 relative overflow-hidden flex items-center justify-center text-slate-400">
+                {b.isDefaultAsset && heroImageMap[b.assetKey] ? (
+                  <img src={heroImageMap[b.assetKey]} alt={b.title} className="w-full h-full object-cover opacity-80" />
+                ) : b.imageUrl ? (
+                  <img src={b.imageUrl} alt={b.title} className="w-full h-full object-cover opacity-80" />
+                ) : (
+                  <ImageIcon className="h-8 w-8 opacity-20" />
+                )}
                 <div className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 backdrop-blur-md shadow-sm ${b.isActive ? 'bg-green-500/90 text-white' : 'bg-slate-500/90 text-white'}`}>
                   {b.isActive ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
                   {b.isActive ? 'Active' : 'Hidden'}
@@ -139,11 +159,6 @@ export default function AdminBannersPage() {
                 <h3 className="font-bold text-slate-900 line-clamp-1" title={b.title}>{b.title}</h3>
                 
                 <div className="mt-3 space-y-2 text-xs text-slate-600 flex-grow">
-                  <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-lg">
-                    <ImageIcon className="h-4 w-4 text-slate-400" />
-                    <span className="font-medium text-slate-700 capitalize">{b.placement.replace('_', ' ')}</span>
-                  </div>
-                  
                   <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-lg truncate">
                     <LinkIcon className="h-4 w-4 text-slate-400 shrink-0" />
                     <a href={b.targetUrl} target="_blank" rel="noreferrer" className="truncate text-blue-600 hover:underline">{b.targetUrl || 'No Link'}</a>
@@ -189,8 +204,13 @@ export default function AdminBannersPage() {
               </div>
               
               <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">Image URL</label>
-                <input required type="url" value={formData.imageUrl} onChange={e => setFormData({ ...formData, imageUrl: e.target.value })} className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900" placeholder="https://example.com/banner.jpg" />
+                <label className="mb-1 block text-sm font-semibold text-slate-700">Description / Subtitle</label>
+                <input type="text" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900" placeholder="Limited time offer valid till next week!" />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-slate-700">Image URL (Optional)</label>
+                <input type="url" value={formData.imageUrl} onChange={e => setFormData({ ...formData, imageUrl: e.target.value })} className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900" placeholder="Leave blank to use default scenic backgrounds" />
                 {formData.imageUrl && <img src={formData.imageUrl} alt="Preview" className="mt-2 h-20 rounded-lg object-cover border border-slate-200" />}
               </div>
 
@@ -199,19 +219,9 @@ export default function AdminBannersPage() {
                 <input type="url" value={formData.targetUrl} onChange={e => setFormData({ ...formData, targetUrl: e.target.value })} className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900" placeholder="https://jkplot.com/promotions" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-slate-700">Placement</label>
-                  <select value={formData.placement} onChange={e => setFormData({ ...formData, placement: e.target.value })} className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 bg-white">
-                    <option value="homepage_hero">Homepage Hero Carousel</option>
-                    <option value="dashboard_top">Dashboard Top</option>
-                    <option value="property_list">Property List Interstitial</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-slate-700">End Date (Optional)</label>
-                  <input type="date" value={formData.endDate} onChange={e => setFormData({ ...formData, endDate: e.target.value })} className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900" />
-                </div>
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-slate-700">End Date (Optional)</label>
+                <input type="date" value={formData.endDate} onChange={e => setFormData({ ...formData, endDate: e.target.value })} className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900" />
               </div>
 
               <div className="flex items-center gap-2 pt-2">

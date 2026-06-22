@@ -9,7 +9,20 @@ const BannerSchema = new mongoose.Schema({
     },
     imageUrl: {
         type: String,
-        required: [true, 'Please add an image URL']
+        default: ''
+    },
+    isDefaultAsset: {
+        type: Boolean,
+        default: false
+    },
+    assetKey: {
+        type: String,
+        default: ''
+    },
+    description: {
+        type: String,
+        trim: true,
+        maxlength: [200, 'Description cannot be more than 200 characters']
     },
     targetUrl: {
         type: String,
