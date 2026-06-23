@@ -614,3 +614,22 @@ exports.togglePropertyFeature = async (req, res, next) => {
         next(err);
     }
 };
+
+// @desc    Increment WhatsApp Clicks
+// @route   PUT /api/properties/:id/whatsapp-click
+// @access  Public
+exports.incrementWhatsAppClick = async (req, res, next) => {
+    try {
+        const property = await Property.findByIdAndUpdate(
+            req.params.id,
+            { $inc: { whatsappClicks: 1 } },
+            { new: true }
+        );
+        if (!property) {
+            return res.status(404).json({ success: false, message: 'Property not found' });
+        }
+        res.status(200).json({ success: true, whatsappClicks: property.whatsappClicks });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};

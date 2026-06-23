@@ -119,6 +119,10 @@ const PropertySchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    whatsappClicks: {
+        type: Number,
+        default: 0
+    },
     isFeatured: {
         type: Boolean,
         default: false

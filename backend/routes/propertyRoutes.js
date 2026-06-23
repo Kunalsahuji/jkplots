@@ -11,7 +11,8 @@ const {
     deletePropertyReview, 
     incrementView,
     togglePropertyVerify,
-    togglePropertyFeature
+    togglePropertyFeature,
+    incrementWhatsAppClick
 } = require('../controllers/propertyController');
 const { protect, authorize } = require('../middleware/auth');
 const { propertyValidation } = require('../middleware/propertyValidation');
@@ -38,5 +39,8 @@ router.route('/:id/reviews/:reviewId')
 
 router.route('/:id/view')
     .put(incrementView);
+
+router.route('/:id/whatsapp-click')
+    .put(incrementWhatsAppClick);
 
 module.exports = router;

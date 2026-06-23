@@ -55,6 +55,8 @@ const PrivacyPage = lazy(() => import('@/pages/Static/PrivacyPage'));
 const TermsPage = lazy(() => import('@/pages/Static/TermsPage'));
 const BlogListPage = lazy(() => import('@/pages/Static/BlogListPage'));
 const BlogDetailsPage = lazy(() => import('@/pages/Static/BlogDetailsPage'));
+const DealersPage = lazy(() => import('@/pages/Static/DealersPage'));
+const DealerProfilePage = lazy(() => import('@/pages/Static/DealerProfilePage'));
 
 // ─── Skeleton loader shown while session check is in-flight ───────────────────
 function PageSkeleton() {
@@ -188,6 +190,12 @@ export default function AppRoutes() {
                 } />
                 <Route path="/blog/:slug" element={
                     <Suspense fallback={<PageSkeleton />}><BlogDetailsPage /></Suspense>
+                } />
+                <Route path="/dealers" element={
+                    <Suspense fallback={<PageSkeleton />}><DealersPage /></Suspense>
+                } />
+                <Route path="/dealers/:id" element={
+                    <Suspense fallback={<PageSkeleton />}><DealerProfilePage /></Suspense>
                 } />
 
                 {/* Protected — require login */}

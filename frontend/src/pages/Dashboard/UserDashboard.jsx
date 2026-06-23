@@ -65,6 +65,7 @@ export default function UserDashboard() {
 
   const [activeTab, setActiveTab] = useState(getTabLabelFromSlug(tab));
   const [newName, setNewName] = useState(user?.name || "");
+  const [newBio, setNewBio] = useState(user?.bio || "");
   const [updatingProfile, setUpdatingProfile] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [chartDays, setChartDays] = useState(30);
@@ -74,6 +75,7 @@ export default function UserDashboard() {
   const [listingStatus, setListingStatus] = useState("All");
   const [listingPurpose, setListingPurpose] = useState("All");
   const [listingSort, setListingSort] = useState("Newest");
+  const [listingLeadsOnly, setListingLeadsOnly] = useState(false);
   const [listingPage, setListingPage] = useState(1);
   const listingsPerPage = 6;
   
@@ -109,6 +111,9 @@ export default function UserDashboard() {
   useEffect(() => {
     if (user?.name) {
       setNewName(user.name);
+    }
+    if (user?.bio) {
+      setNewBio(user.bio);
     }
   }, [user]);
 
@@ -273,16 +278,18 @@ export default function UserDashboard() {
       const matchSearch = p.title?.toLowerCase().includes(listingSearch.toLowerCase()) || p.city?.toLowerCase().includes(listingSearch.toLowerCase());
       const matchStatus = listingStatus === "All" ? true : listingStatus === "Verified" ? p.verified : !p.verified;
       const matchPurpose = listingPurpose === "All" ? true : p.purpose === listingPurpose;
-      return matchSearch && matchStatus && matchPurpose;
+      const matchLeadsOnly = listingLeadsOnly ? (p.whatsappClicks > 0) : true;
+      return matchSearch && matchStatus && matchPurpose && matchLeadsOnly;
     });
 
     if (listingSort === "Newest") result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     if (listingSort === "Oldest") result.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     if (listingSort === "Price Low to High") result.sort((a, b) => a.price - b.price);
     if (listingSort === "Price High to Low") result.sort((a, b) => b.price - a.price);
+    if (listingSort === "Most WhatsApp Leads") result.sort((a, b) => (b.whatsappClicks || 0) - (a.whatsappClicks || 0));
 
     return result;
-  }, [dbProperties, listingSearch, listingStatus, listingPurpose, listingSort]);
+  }, [dbProperties, listingSearch, listingStatus, listingPurpose, listingSort, listingLeadsOnly]);
 
   const paginatedListings = useMemo(() => {
     const start = (listingPage - 1) * listingsPerPage;
@@ -292,7 +299,7 @@ export default function UserDashboard() {
 
   useEffect(() => {
     setListingPage(1);
-  }, [listingSearch, listingStatus, listingPurpose, listingSort]);
+  }, [listingSearch, listingStatus, listingPurpose, listingSort, listingLeadsOnly]);
 
   // Pagination helpers
   const getPaginated = (arr, page, limit) => arr.slice((page - 1) * limit, page * limit);
@@ -354,8 +361,49 @@ export default function UserDashboard() {
     return data.map(d => ({ ...d, heightPercentage: Math.max((d.enquiries / maxVal) * 100, 2) }));
   }, [chartDays, enquiries, receivedEnquiries, sentEnquiries, isAdmin, isDealer]);
 
+  // Calculate total WhatsApp clicks
+  const totalWhatsAppClicks = useMemo(() => {
+    return dbProperties.reduce((acc, curr) => acc + (curr.whatsappClicks || 0), 0);
+  }, [dbProperties]);
+
+  // AI Recommendation Feed
+  const recommendedProperties = useMemo(() => {
+    if (allProperties.length === 0) return [];
+    
+    // Find cities and types from saved properties
+    const savedCities = savedProperties.map(p => p.city?.toLowerCase());
+    const savedTypes = savedProperties.map(p => p.type);
+
+    let filtered = allProperties.filter(p => {
+      // Don't recommend already saved properties
+      const isAlreadySaved = savedProperties.some(saved => saved._id === p._id);
+      if (isAlreadySaved) return false;
+
+      // Don't recommend own property
+      if (isDealer && p.dealerPhone === user?.phone) return false;
+
+      // Match city or type
+      const matchCity = savedCities.includes(p.city?.toLowerCase());
+      const matchType = savedTypes.includes(p.type);
+      return matchCity || matchType;
+    });
+
+    // Fallback: if no recommendations, suggest featured listings
+    if (filtered.length === 0) {
+      filtered = allProperties.filter(p => p.isFeatured && (!isDealer || p.dealerPhone !== user?.phone));
+    }
+
+    // Fallback 2: just show newest
+    if (filtered.length === 0) {
+      filtered = allProperties.filter(p => !isDealer || p.dealerPhone !== user?.phone);
+    }
+
+    return filtered.slice(0, 3);
+  }, [allProperties, savedProperties, user, isDealer]);
+
   const stats = [
     { label: isAdmin ? "System Listings" : "Active listings", value: (isDealer || isAdmin) ? dbProperties.length : "0", icon: Home, trend: "Live status", tab: isAdmin ? "All Listings" : "My Listings" },
+    ...(isDealer ? [{ label: "WhatsApp Leads", value: totalWhatsAppClicks, icon: Phone, trend: "Click counter", tab: "My Listings" }] : []),
     { label: "Received Enquiries", value: isDealer ? receivedEnquiries.length : "0", icon: MessageSquare, trend: "Prospects", tab: "Enquiries" },
     { label: "Sent Enquiries", value: sentEnquiries.length, icon: FileText, trend: "My requests", tab: "Enquiries" },
     { label: "Saved Listings", value: savedProperties.length, icon: Heart, trend: "Shortlist", tab: "Saved" },
@@ -514,6 +562,10 @@ export default function UserDashboard() {
                     onClick={() => {
                       const targetTab = tabs.find(t => t.label === s.tab);
                       if (targetTab) handleTabChange(targetTab);
+                      if (s.label === "WhatsApp Leads") {
+                        setListingLeadsOnly(true);
+                        setListingSort("Most WhatsApp Leads");
+                      }
                     }}
                     className="rounded-2xl border border-border bg-card p-5 shadow-sm text-left transition hover:border-primary hover:shadow-md active:scale-95"
                   >
@@ -558,6 +610,26 @@ export default function UserDashboard() {
                   ))}
                 </div>
               </div>
+
+              {/* AI Recommendation Feed */}
+              {!isAdmin && recommendedProperties.length > 0 && (
+                <div className="rounded-2xl border border-border bg-card p-6 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-border pb-3">
+                    <div>
+                      <h2 className="font-display text-lg font-bold flex items-center gap-2">
+                        <span className="flex h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+                        AI Smart Recommendations
+                      </h2>
+                      <p className="text-xs text-muted-foreground mt-0.5">Personalized property matches based on your saved items and preferences</p>
+                    </div>
+                  </div>
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {recommendedProperties.map(property => (
+                      <PropertyCard key={property._id} p={property} />
+                    ))}
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -575,10 +647,20 @@ export default function UserDashboard() {
                   <h2 className="font-display text-xl font-bold">
                     {isAdmin ? "All System Listings" : "My Properties"}
                   </h2>
-                  <p className="text-xs text-muted-foreground mt-0.5">Edit, delete, and view status of properties</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {listingLeadsOnly ? "Showing properties with active WhatsApp Leads" : "Edit, delete, and view status of properties"}
+                  </p>
                 </div>
                 {dbProperties.length > 0 && (
                   <div className="flex flex-wrap items-center gap-2 mt-3 sm:mt-0">
+                    {listingLeadsOnly && (
+                      <button
+                        onClick={() => setListingLeadsOnly(false)}
+                        className="rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-3.5 py-1.5 text-xs font-bold hover:bg-emerald-100 transition"
+                      >
+                        Clear Leads Filter
+                      </button>
+                    )}
                     <div className="relative flex-1 min-w-[150px]">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                       <input 
@@ -617,6 +699,7 @@ export default function UserDashboard() {
                       <option value="Oldest">Oldest</option>
                       <option value="Price Low to High">Price: Low to High</option>
                       <option value="Price High to Low">Price: High to Low</option>
+                      {isDealer && <option value="Most WhatsApp Leads">Most WhatsApp Leads</option>}
                     </select>
                   </div>
                 )}
@@ -630,7 +713,7 @@ export default function UserDashboard() {
                   <Inbox className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
                   <p className="text-sm font-semibold text-foreground">No matching listings</p>
                   <p className="text-xs text-muted-foreground mt-1">Try adjusting your filters or search.</p>
-                  <button onClick={() => {setListingSearch(""); setListingStatus("All"); setListingPurpose("All"); setListingSort("Newest");}} className="mt-4 text-xs font-semibold text-primary hover:underline">Reset Filters</button>
+                  <button onClick={() => {setListingSearch(""); setListingStatus("All"); setListingPurpose("All"); setListingSort("Newest"); setListingLeadsOnly(false);}} className="mt-4 text-xs font-semibold text-primary hover:underline">Reset Filters</button>
                 </div>
               ) : (
                 <>
@@ -640,6 +723,12 @@ export default function UserDashboard() {
                         <div className="flex-1 flex flex-col">
                           <PropertyCard p={p} />
                         </div>
+                        {isDealer && p.whatsappClicks > 0 && (
+                          <div className="absolute top-3 left-3 z-10 bg-emerald-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-xl flex items-center gap-1 shadow-sm border border-emerald-500">
+                            <MessageSquare className="h-3 w-3 fill-white" />
+                            {p.whatsappClicks} {p.whatsappClicks === 1 ? 'Lead' : 'Leads'}
+                          </div>
+                        )}
                         <div className="absolute right-3 bottom-3 z-10 flex gap-2">
                           <Link
                             to={`/edit-property/${p._id}`}
@@ -1002,7 +1091,7 @@ export default function UserDashboard() {
                   }
                   setUpdatingProfile(true);
                   try {
-                    const { data } = await api.put("/users/me", { name: newName });
+                    const { data } = await api.put("/users/me", { name: newName, bio: newBio });
                     if (data.success) {
                       toast.success("Profile updated successfully!");
                       await refreshUser();
@@ -1024,6 +1113,19 @@ export default function UserDashboard() {
                     className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
                   />
                 </div>
+                {isDealer && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Professional Bio</label>
+                    <textarea
+                      rows={4}
+                      maxLength={300}
+                      value={newBio}
+                      onChange={(e) => setNewBio(e.target.value)}
+                      placeholder="Tell buyers about your experience, areas you cover, etc..."
+                      className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary resize-none"
+                    />
+                  </div>
+                )}
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mobile Number</label>
                   <input

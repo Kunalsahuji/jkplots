@@ -19,6 +19,7 @@ const sanitizeUser = (user) => ({
     panNumber: user.panNumber,
     panName: user.panName,
     kycStatus: user.kycStatus,
+    bio: user.bio || '',
     createdAt: user.createdAt,
 });
 
@@ -213,12 +214,15 @@ exports.toggleSaveProperty = asyncHandler(async (req, res, next) => {
 // ─── @route   PUT /api/users/me
 // ─── @access  Private
 exports.updateProfile = asyncHandler(async (req, res, next) => {
-    const { name } = req.body;
+    const { name, bio } = req.body;
     if (!name || name.trim().length < 2) {
         return next(new ErrorResponse('Name must be at least 2 characters', 400));
     }
     const user = await User.findById(req.user.id);
     user.name = name.trim();
+    if (bio !== undefined) {
+        user.bio = bio.trim();
+    }
     await user.save({ validateModifiedOnly: true });
 
     res.status(200).json({
@@ -475,5 +479,90 @@ exports.deleteUser = asyncHandler(async (req, res, next) => {
     res.status(200).json({
         success: true,
         message: 'Account and associated listings deleted successfully'
+    });
+});
+
+// ─── @desc    Get public dealer details with listings ─────────────────────────
+// ─── @route   GET /api/users/dealers/:id
+// ─── @access  Public
+exports.getPublicDealer = asyncHandler(async (req, res, next) => {
+    const dealer = await User.findOne({ _id: req.params.id, role: 'dealer' });
+    if (!dealer) {
+        return next(new ErrorResponse('Dealer profile not found', 404));
+    }
+
+    const Property = require('../models/Property');
+    const properties = await Property.find({ 
+        $or: [
+            { dealer: dealer._id },
+            { dealerPhone: dealer.phone }
+        ]
+    }).sort('-createdAt');
+
+    // Calculate rating score
+    const totalReviews = properties.reduce((acc, curr) => acc + (curr.reviews?.length || 0), 0);
+    const sumRatings = properties.reduce((acc, curr) => {
+        const propSum = curr.reviews?.reduce((s, r) => s + r.rating, 0) || 0;
+        return acc + propSum;
+    }, 0);
+    const ratingScore = totalReviews > 0 ? (sumRatings / totalReviews).toFixed(1) : "5.0";
+
+    res.status(200).json({
+        success: true,
+        data: {
+            id: dealer._id,
+            name: dealer.name,
+            phone: dealer.phone,
+            kycStatus: dealer.kycStatus,
+            bio: dealer.bio || `Registered professional real estate dealer at JKPlot. Helping you find properties in Jammu and Kashmir.`,
+            ratingScore,
+            totalProperties: properties.length,
+            properties
+        }
+    });
+});
+
+// ─── @desc    Get all public dealers ──────────────────────────────────────────
+// ─── @route   GET /api/users/dealers
+// ─── @access  Public
+exports.getPublicDealers = asyncHandler(async (req, res, next) => {
+    const dealers = await User.find({ role: 'dealer' });
+    const Property = require('../models/Property');
+
+    const result = [];
+    for (const dealer of dealers) {
+        const properties = await Property.find({ 
+            $or: [
+                { dealer: dealer._id },
+                { dealerPhone: dealer.phone }
+            ]
+        });
+
+        // Calculate rating score
+        const totalReviews = properties.reduce((acc, curr) => acc + (curr.reviews?.length || 0), 0);
+        const sumRatings = properties.reduce((acc, curr) => {
+            const propSum = curr.reviews?.reduce((s, r) => s + r.rating, 0) || 0;
+            return acc + propSum;
+        }, 0);
+        const ratingScore = totalReviews > 0 ? (sumRatings / totalReviews).toFixed(1) : "5.0";
+
+        // Check if dealer has featured listings
+        const hasFeatured = properties.some(p => p.isFeatured && (!p.featuredUntil || p.featuredUntil > Date.now()));
+
+        result.push({
+            id: dealer._id,
+            name: dealer.name,
+            phone: dealer.phone,
+            kycStatus: dealer.kycStatus,
+            bio: dealer.bio || `Registered professional real estate dealer at JKPlot. Helping you find properties in Jammu and Kashmir.`,
+            ratingScore,
+            totalProperties: properties.length,
+            hasFeatured
+        });
+    }
+
+    res.status(200).json({
+        success: true,
+        data: result
     });
 });

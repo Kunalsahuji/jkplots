@@ -77,6 +77,10 @@ const UserSchema = new mongoose.Schema(
             endDate: { type: Date },
             status: { type: String, enum: ['active', 'expired', 'none'], default: 'none' }
         },
+        bio: {
+            type: String,
+            default: ''
+        },
     },
     {
         timestamps: true,

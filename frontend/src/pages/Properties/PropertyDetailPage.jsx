@@ -298,11 +298,16 @@ export default function PropertyDetailPage() {
   const dealerInitial = dealerName.charAt(0).toUpperCase();
   const isDealerVerified = p.dealer?.verified || true;
 
-  const handleWhatsApp = () => {
+  const handleWhatsApp = async () => {
     if (!requireAuth("contact dealer via WhatsApp")) return;
     const cleanPhone = dealerPhone.replace(/\D/g, "");
     const text = encodeURIComponent(`Hi, I'm interested in your property "${title}" listed on JKPlot.`);
     window.open(`https://wa.me/91${cleanPhone}?text=${text}`, "_blank");
+    try {
+      await api.put(`/properties/${property?._id || id}/whatsapp-click`);
+    } catch (err) {
+      console.error("Failed to track WhatsApp lead:", err);
+    }
   };
 
   const handleCall = () => {
@@ -981,19 +986,35 @@ export default function PropertyDetailPage() {
                 Listed By Agent
               </div>
               
-              <div className="flex items-center gap-3 bg-secondary/25 p-3 rounded-xl border border-border/50">
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-hero text-primary-foreground font-bold text-lg shadow-sm">
-                  {dealerInitial}
+              {p.dealer ? (
+                <Link to={`/dealers/${p.dealer?._id || p.dealer}`} className="flex items-center gap-3 bg-secondary/25 p-3 rounded-xl border border-border/50 hover:bg-secondary/40 transition-colors">
+                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-hero text-primary-foreground font-bold text-lg shadow-sm">
+                    {dealerInitial}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold truncate text-foreground text-sm hover:underline">{dealerName}</div>
+                    {isDealerVerified && (
+                      <div className="flex items-center gap-1 text-xs text-success font-medium mt-0.5">
+                        <BadgeCheck className="h-3.5 w-3.5" /> Verified Agent
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              ) : (
+                <div className="flex items-center gap-3 bg-secondary/25 p-3 rounded-xl border border-border/50">
+                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-hero text-primary-foreground font-bold text-lg shadow-sm">
+                    {dealerInitial}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold truncate text-foreground text-sm">{dealerName}</div>
+                    {isDealerVerified && (
+                      <div className="flex items-center gap-1 text-xs text-success font-medium mt-0.5">
+                        <BadgeCheck className="h-3.5 w-3.5" /> Verified Agent
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-bold truncate text-foreground text-sm">{dealerName}</div>
-                  {isDealerVerified && (
-                    <div className="flex items-center gap-1 text-xs text-success font-medium mt-0.5">
-                      <BadgeCheck className="h-3.5 w-3.5" /> Verified Agent
-                    </div>
-                  )}
-                </div>
-              </div>
+              )}
 
               <div className="space-y-2">
                 <Button onClick={handleWhatsApp} className="w-full gap-2 rounded-xl bg-success text-success-foreground hover:bg-success/90">

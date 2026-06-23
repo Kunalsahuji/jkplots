@@ -13,7 +13,9 @@ const {
     verifyKYCOTP,
     adminUpdateUser,
     createUser,
-    deleteUser
+    deleteUser,
+    getPublicDealer,
+    getPublicDealers
 } = require('../controllers/userController');
 
 const { protect, authorize } = require('../middleware/auth');
@@ -23,6 +25,8 @@ const validate = require('../utils/validate');
 // ─── Public routes ────────────────────────────────────────────────────────────
 router.post('/send-otp', sendOtpValidation, validate, sendOtp);
 router.post('/verify-otp', verifyOtpValidation, validate, verifyOtp);
+router.get('/dealers', getPublicDealers);
+router.get('/dealers/:id', getPublicDealer);
 
 // ─── Protected routes (JWT required) ─────────────────────────────────────────
 router.get('/me', protect, getMe);
