@@ -370,35 +370,93 @@ export default function UserDashboard() {
   const recommendedProperties = useMemo(() => {
     if (allProperties.length === 0) return [];
     
-    // Find cities and types from saved properties
+    // 1. Gather preferences from saved properties
     const savedCities = savedProperties.map(p => p.city?.toLowerCase());
     const savedTypes = savedProperties.map(p => p.type);
+    const savedPurposes = savedProperties.map(p => p.purpose);
 
-    let filtered = allProperties.filter(p => {
-      // Don't recommend already saved properties
+    // 2. Gather preferences from localStorage recent search profile
+    let searchCity = null;
+    let searchType = null;
+    let searchPurpose = null;
+    let searchQuery = null;
+    try {
+      const storedSearch = localStorage.getItem("jkplot_recent_search_profile");
+      if (storedSearch) {
+        const parsed = JSON.parse(storedSearch);
+        // Expire searches older than 3 days
+        if (parsed && Date.now() - parsed.timestamp < 3 * 24 * 60 * 60 * 1000) {
+          searchCity = parsed.city?.toLowerCase();
+          searchType = parsed.type;
+          searchPurpose = parsed.purpose;
+          searchQuery = parsed.query?.toLowerCase();
+        }
+      }
+    } catch (e) {
+      console.error("Failed to parse search profile:", e);
+    }
+
+    // Rank properties based on match scores
+    const scoredProperties = allProperties
+      .map(p => {
+        let score = 0;
+
+        // Exclude saved properties
+        const isAlreadySaved = savedProperties.some(saved => saved._id === p._id);
+        if (isAlreadySaved) return { property: p, score: -1 };
+
+        // Exclude own property
+        if (isDealer && p.dealerPhone === user?.phone) return { property: p, score: -1 };
+
+        // 1. Active Search Matches (Highest priority)
+        if (searchCity && p.city?.toLowerCase() === searchCity) score += 15;
+        if (searchType && p.type === searchType) score += 10;
+        if (searchPurpose && p.purpose === searchPurpose) score += 5;
+        if (searchQuery) {
+          const matchQuery = 
+            p.title?.toLowerCase().includes(searchQuery) ||
+            p.city?.toLowerCase().includes(searchQuery) ||
+            p.locality?.toLowerCase().includes(searchQuery) ||
+            p.type?.toLowerCase().includes(searchQuery);
+          if (matchQuery) score += 12;
+        }
+
+        // 2. Saved Property Matches (Secondary priority)
+        if (savedCities.includes(p.city?.toLowerCase())) score += 8;
+        if (savedTypes.includes(p.type)) score += 5;
+        if (savedPurposes.includes(p.purpose)) score += 2;
+
+        // 3. Featured Ad Bonus
+        const isFeaturedActive = p.isFeatured && (!p.featuredUntil || new Date(p.featuredUntil) > Date.now());
+        if (isFeaturedActive) score += 3;
+
+        return { property: p, score };
+      })
+      // Filter out excluded ones and non-matching ones
+      .filter(item => item.score > 0)
+      // Sort by score descending
+      .sort((a, b) => b.score - a.score);
+
+    // If we have scored recommendations, return the top 3
+    if (scoredProperties.length > 0) {
+      return scoredProperties.slice(0, 3).map(item => item.property);
+    }
+
+    // Fallback: If no matches, return featured or newest properties
+    const fallbackList = allProperties.filter(p => {
       const isAlreadySaved = savedProperties.some(saved => saved._id === p._id);
-      if (isAlreadySaved) return false;
-
-      // Don't recommend own property
-      if (isDealer && p.dealerPhone === user?.phone) return false;
-
-      // Match city or type
-      const matchCity = savedCities.includes(p.city?.toLowerCase());
-      const matchType = savedTypes.includes(p.type);
-      return matchCity || matchType;
+      const isOwn = isDealer && p.dealerPhone === user?.phone;
+      return !isAlreadySaved && !isOwn;
     });
 
-    // Fallback: if no recommendations, suggest featured listings
-    if (filtered.length === 0) {
-      filtered = allProperties.filter(p => p.isFeatured && (!isDealer || p.dealerPhone !== user?.phone));
+    // Try featured first
+    const featuredFallback = fallbackList.filter(p => p.isFeatured && (!p.featuredUntil || new Date(p.featuredUntil) > Date.now()));
+    if (featuredFallback.length > 0) {
+      return featuredFallback.slice(0, 3);
     }
 
-    // Fallback 2: just show newest
-    if (filtered.length === 0) {
-      filtered = allProperties.filter(p => !isDealer || p.dealerPhone !== user?.phone);
-    }
-
-    return filtered.slice(0, 3);
+    // Otherwise just newest
+    return fallbackList.slice(0, 3);
   }, [allProperties, savedProperties, user, isDealer]);
 
   const stats = [

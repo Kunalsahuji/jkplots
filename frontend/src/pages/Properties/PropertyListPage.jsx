@@ -52,10 +52,23 @@ export default function PropertyListPage() {
     const cityParam = searchParams.get("city") || "All";
     const purposeParam = searchParams.get("purpose") || "All";
     const typeParam = searchParams.get("type") || "All";
+    const searchParam = searchParams.get("search") || "";
 
     setCity(cityParam);
     setPurpose(purposeParam);
     setType(typeParam);
+
+    // Save search preferences to localStorage if they are not default "All" or if a query exists
+    if (cityParam !== "All" || typeParam !== "All" || purposeParam !== "All" || searchParam.trim()) {
+      const searchProfile = {
+        city: cityParam !== "All" ? cityParam : null,
+        type: typeParam !== "All" ? typeParam : null,
+        purpose: purposeParam !== "All" ? purposeParam : null,
+        query: searchParam.trim() || null,
+        timestamp: Date.now()
+      };
+      localStorage.setItem("jkplot_recent_search_profile", JSON.stringify(searchProfile));
+    }
   }, [searchParams]);
 
   const handleFilterChange = (key, value) => {
