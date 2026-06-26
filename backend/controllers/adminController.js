@@ -13,9 +13,9 @@ const sanitizeAdmin = (admin) => ({
     permissions: admin.permissions,
 });
 
-// ─── @desc    Admin Login with Email & Password ──────────────────────────────
-// ─── @route   POST /api/admin/login
-// ─── @access  Public
+//   Admin Login with Email & Password ──────────────────────────────
+//   POST /api/admin/login
+//   Public
 exports.adminLogin = asyncHandler(async (req, res, next) => {
     const { email, password } = req.body;
 
