@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 import { toast } from "sonner";
+import { resolveImage, FALLBACK_IMAGE } from "@/utils/resolveImage";
 
 const formatPrice = (val) => {
   if (!val) return "₹—";
@@ -13,11 +14,6 @@ const formatPrice = (val) => {
   return `₹${val.toLocaleString()}`;
 };
 
-const resolveImage = (img) => {
-  if (!img) return "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80";
-  if (img.startsWith("http") || img.startsWith("data:") || img.startsWith("/src/")) return img;
-  return `http://localhost:5000${img.startsWith("/") ? "" : "/"}${img}`;
-};
 
 export function PropertyCard({ p }) {
   const { user, refreshUser } = useAuth();
@@ -32,9 +28,7 @@ export function PropertyCard({ p }) {
   const type = p.type;
   const isFeatured = p.isFeatured && new Date(p.featuredUntil) > new Date();
 
-  // Image error fallback logic
   const [imgSrc, setImgSrc] = useState(image);
-  const fallbackImage = "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80";
 
   const handleSaveToggle = async (e) => {
     e.preventDefault();
@@ -70,7 +64,7 @@ export function PropertyCard({ p }) {
           src={imgSrc}
           alt={title}
           loading="lazy"
-          onError={() => setImgSrc(fallbackImage)}
+          onError={() => setImgSrc(FALLBACK_IMAGE)}
           className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
         <div className="absolute left-3 top-3 flex flex-col gap-1.5">

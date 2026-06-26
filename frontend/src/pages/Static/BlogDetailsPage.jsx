@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Calendar, User, Eye, Share2, Loader2, Tag } from "lucide-react";
 import api from "../../utils/api";
+import { resolveImage } from "@/utils/resolveImage";
 
 export default function BlogDetailsPage() {
   const { slug } = useParams();
@@ -84,7 +85,7 @@ export default function BlogDetailsPage() {
       {/* Hero Image Section */}
       <div className="w-full h-[50vh] md:h-[60vh] relative bg-slate-900">
         <img 
-          src={blog.coverImage.startsWith('http') ? blog.coverImage : `http://localhost:5000${blog.coverImage}`} 
+          src={resolveImage(blog.coverImage)} 
           alt={blog.title} 
           className="w-full h-full object-cover opacity-60"
         />
@@ -112,7 +113,7 @@ export default function BlogDetailsPage() {
             <div className="flex flex-wrap items-center gap-6 text-white/80 text-sm font-medium">
               <div className="flex items-center gap-2">
                 {blog.author?.avatar ? (
-                  <img src={blog.author.avatar.startsWith('http') ? blog.author.avatar : `http://localhost:5000${blog.author.avatar}`} alt="Author" className="w-8 h-8 rounded-full object-cover border-2 border-white/20" />
+                  <img src={resolveImage(blog.author?.avatar)} alt="Author" className="w-8 h-8 rounded-full object-cover border-2 border-white/20" />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-white/10 border-2 border-white/20 text-white font-bold flex items-center justify-center text-xs">
                     {blog.author?.name?.charAt(0) || 'U'}

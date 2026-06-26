@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Search, Calendar, User, ArrowRight, BookOpen, Loader2 } from "lucide-react";
 import api from "../../utils/api";
+import { resolveImage } from "@/utils/resolveImage";
 
 export default function BlogListPage() {
   const [blogs, setBlogs] = useState([]);
@@ -106,7 +107,7 @@ export default function BlogListPage() {
               >
                 <div className="relative h-56 overflow-hidden bg-slate-100">
                   <img 
-                    src={blog.coverImage.startsWith('http') ? blog.coverImage : `http://localhost:5000${blog.coverImage}`}
+                    src={resolveImage(blog.coverImage)}
                     alt={blog.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
@@ -131,7 +132,7 @@ export default function BlogListPage() {
                   <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-auto">
                     <div className="flex items-center gap-2">
                       {blog.author?.avatar ? (
-                        <img src={blog.author.avatar.startsWith('http') ? blog.author.avatar : `http://localhost:5000${blog.author.avatar}`} alt="Author" className="w-8 h-8 rounded-full object-cover" />
+                        <img src={resolveImage(blog.author?.avatar)} alt="Author" className="w-8 h-8 rounded-full object-cover" />
                       ) : (
                         <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center text-xs">
                           {blog.author?.name?.charAt(0) || 'U'}

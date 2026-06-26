@@ -31,6 +31,7 @@ import { PropertyCard } from "@/components/site/PropertyCard";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 import { toast } from "sonner";
+import { resolveImage } from "@/utils/resolveImage";
 import PromotePropertyTab from "./PromotePropertyTab";
 import KycSection from "./KycSection";
 import SubscriptionTab from "./SubscriptionTab";
@@ -1249,7 +1250,7 @@ export default function UserDashboard() {
                           <div className="flex gap-3">
                             <div className="h-16 w-20 shrink-0 overflow-hidden rounded-xl border border-border bg-muted">
                               <img
-                                src={r.property?.photos && r.property.photos[0] ? (r.property.photos[0].startsWith('http') ? r.property.photos[0] : `http://localhost:5000${r.property.photos[0]}`) : "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80"}
+                                src={resolveImage(r.property?.photos?.[0])}
                                 alt={r.property?.title || "Property"}
                                 className="h-full w-full object-cover"
                               />

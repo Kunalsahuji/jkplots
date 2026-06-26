@@ -7,6 +7,7 @@ import {
 import { toast } from "sonner";
 import api from "../../utils/api";
 import { Link } from "react-router-dom";
+import { resolveImage } from "@/utils/resolveImage";
 import { motion } from "framer-motion";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
@@ -229,7 +230,7 @@ export default function DealerBlogsTab() {
                   <div className="flex flex-col sm:flex-row items-center gap-6">
                     {formData.coverImage && (
                       <div className="relative w-full sm:w-32 h-32 sm:h-24 rounded-lg overflow-hidden border border-border shrink-0">
-                        <img src={formData.coverImage.startsWith('http') || formData.coverImage.startsWith('data:') ? formData.coverImage : `http://localhost:5000${formData.coverImage}`} alt="Cover" className="w-full h-full object-cover" />
+                        <img src={resolveImage(formData.coverImage)} alt="Cover" className="w-full h-full object-cover" />
                       </div>
                     )}
                     <div className="flex-1 w-full space-y-3">
@@ -381,7 +382,7 @@ export default function DealerBlogsTab() {
             <div key={blog._id} className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm flex">
               <div className="w-1/3 min-w-[120px] relative bg-secondary">
                 <img 
-                  src={blog.coverImage.startsWith('http') ? blog.coverImage : `http://localhost:5000${blog.coverImage}`} 
+                  src={resolveImage(blog.coverImage)} 
                   alt={blog.title} 
                   className="w-full h-full object-cover"
                 />

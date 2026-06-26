@@ -190,8 +190,7 @@ export default function HomePage() {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/properties");
-        const resData = await response.json();
+        const { data: resData } = await api.get("/properties");
         if (resData.success) {
           setPropertyList(resData.data);
         }

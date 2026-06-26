@@ -38,7 +38,7 @@ const sendTokenCookies = (res, userId) => {
     res.cookie('accessToken', accessToken, {
         httpOnly: true,
         secure: isProd,
-        sameSite: isProd ? 'strict' : 'lax',
+        sameSite: isProd ? 'none' : 'lax', // 'none' required for cross-domain (Render + Vercel)
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in ms
     });
 
@@ -46,7 +46,7 @@ const sendTokenCookies = (res, userId) => {
     res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         secure: isProd,
-        sameSite: isProd ? 'strict' : 'lax',
+        sameSite: isProd ? 'none' : 'lax', // 'none' required for cross-domain (Render + Vercel)
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in ms
     });
 

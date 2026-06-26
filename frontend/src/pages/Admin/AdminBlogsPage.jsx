@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import api from "../../utils/api";
 import { Link } from "react-router-dom";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { resolveImage } from "@/utils/resolveImage";
 
 export default function AdminBlogsPage() {
   const [blogs, setBlogs] = useState([]);
@@ -232,7 +233,7 @@ export default function AdminBlogsPage() {
                   <div className="flex flex-col sm:flex-row items-center gap-6">
                     {formData.coverImage && (
                       <div className="relative w-full sm:w-32 h-32 sm:h-24 rounded-lg overflow-hidden border border-slate-200 shrink-0">
-                        <img src={formData.coverImage.startsWith('http') || formData.coverImage.startsWith('data:') ? formData.coverImage : `http://localhost:5000${formData.coverImage}`} alt="Cover" className="w-full h-full object-cover" />
+                        <img src={resolveImage(formData.coverImage)} alt="Cover" className="w-full h-full object-cover" />
                       </div>
                     )}
                     <div className="flex-1 w-full space-y-3">
@@ -416,7 +417,7 @@ export default function AdminBlogsPage() {
             <div key={blog._id} className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col group">
               <div className="relative h-40 bg-slate-100 overflow-hidden shrink-0">
                 <img 
-                  src={blog.coverImage.startsWith('http') ? blog.coverImage : `http://localhost:5000${blog.coverImage}`} 
+                  src={resolveImage(blog.coverImage)} 
                   alt={blog.title} 
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
@@ -443,7 +444,7 @@ export default function AdminBlogsPage() {
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-6 h-6 rounded-full bg-slate-100 overflow-hidden shrink-0">
                     {blog.author?.avatar ? (
-                      <img src={blog.author.avatar.startsWith('http') ? blog.author.avatar : `http://localhost:5000${blog.author.avatar}`} alt="Author" className="w-full h-full object-cover" />
+                      <img src={resolveImage(blog.author?.avatar)} alt="Author" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-indigo-100 text-indigo-700 text-[10px] font-bold">
                         {blog.author?.name?.charAt(0) || 'U'}

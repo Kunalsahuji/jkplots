@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Search, Heart, User, Menu, X, Plus, LogOut } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Home, Search, Heart, User, Menu, X, Plus, LogOut, LayoutDashboard, Settings, ChevronDown } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 
@@ -12,23 +12,41 @@ const nav = [
   { to: "/properties?purpose=Commercial", label: "Commercial" },
   { to: "/dealers", label: "Agents" },
   { to: "/blog", label: "Blog" },
-  { to: "/dashboard", label: "Dashboard" },
 ];
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = location.pathname + location.search;
+  const dropdownRef = useRef(null);
 
   const { user, isAuthenticated, logout } = useAuth();
   const showPostProperty = isAuthenticated && user?.role === "dealer";
-  const filteredNav = nav.filter((n) => n.to !== "/dashboard" || isAuthenticated);
 
   const handleLogout = async () => {
+    setProfileOpen(false);
     await logout();
     navigate("/", { replace: true });
   };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Close dropdown on route change
+  useEffect(() => {
+    setProfileOpen(false);
+    setOpen(false);
+  }, [location.pathname]);
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/85 backdrop-blur-xl shadow-sm text-foreground">
@@ -43,7 +61,7 @@ export function Header() {
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex">
-          {filteredNav.map((n) => {
+          {nav.map((n) => {
             const isActive = currentPath === n.to || (n.to !== "/" && currentPath.startsWith(n.to));
             return (
               <Link
@@ -63,27 +81,64 @@ export function Header() {
 
         <div className="flex items-center gap-2">
           {showPostProperty && (
-            <Link to="/post-property" className="hidden sm:inline-flex">
+            <Link to="/post-property" className="hidden lg:inline-flex">
               <Button className="gap-1.5 rounded-full bg-foreground text-background hover:bg-foreground/90">
                 <Plus className="h-4 w-4" /> Post Property <span className="ml-1 rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-accent-foreground">FREE</span>
               </Button>
             </Link>
           )}
+
           {isAuthenticated ? (
-            <>
-              <Link 
-                to="/dashboard" 
-                className="hidden items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground sm:inline-flex"
-              >
-                <User className="h-4 w-4" /> {user?.name?.split(' ')[0]}
-              </Link>
+            <div className="relative hidden lg:block" ref={dropdownRef}>
+              {/* Profile Trigger Button */}
               <button
-                onClick={handleLogout}
-                className="hidden items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:border-destructive hover:text-destructive sm:inline-flex"
+                onClick={() => setProfileOpen((prev) => !prev)}
+                className="flex items-center gap-2 rounded-full border border-border bg-secondary/60 px-3 py-1.5 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
               >
-                <LogOut className="h-3.5 w-3.5" /> Logout
+                <div className="grid h-6 w-6 place-items-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                  {user?.name?.charAt(0).toUpperCase()}
+                </div>
+                <span className="max-w-[80px] truncate">{user?.name?.split(" ")[0]}</span>
+                <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${profileOpen ? "rotate-180" : ""}`} />
               </button>
-            </>
+
+              {/* Dropdown Menu */}
+              {profileOpen && (
+                <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-border bg-background shadow-xl overflow-hidden z-50">
+                  {/* User info header */}
+                  <div className="border-b border-border px-4 py-3 bg-secondary/30">
+                    <p className="text-sm font-bold text-foreground truncate">{user?.name}</p>
+                    <p className="text-[11px] text-muted-foreground capitalize">{user?.role || "Member"}</p>
+                  </div>
+                  {/* Menu items */}
+                  <div className="py-1.5">
+                    <Link
+                      to="/dashboard"
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+                    >
+                      <LayoutDashboard className="h-4 w-4 text-primary" />
+                      Dashboard
+                    </Link>
+                    <Link
+                      to="/dashboard/settings"
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+                    >
+                      <Settings className="h-4 w-4 text-muted-foreground" />
+                      Settings
+                    </Link>
+                  </div>
+                  <div className="border-t border-border py-1.5">
+                    <button
+                      onClick={handleLogout}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <Link 
               to="/auth" 
@@ -105,7 +160,7 @@ export function Header() {
       {open && (
         <div className="border-t border-border bg-background lg:hidden">
           <div className="container-px mx-auto flex max-w-7xl flex-col gap-1 py-3">
-            {filteredNav.map((n) => {
+            {nav.map((n) => {
               const isActive = currentPath === n.to || (n.to !== "/" && currentPath.startsWith(n.to));
               return (
                 <Link
@@ -122,6 +177,24 @@ export function Header() {
                 </Link>
               );
             })}
+            {isAuthenticated && (
+              <>
+                <Link
+                  to="/dashboard"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary border-t border-border mt-2 pt-3"
+                >
+                  <LayoutDashboard className="h-4 w-4 text-primary" /> Dashboard
+                </Link>
+                <Link
+                  to="/dashboard/settings"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-muted-foreground hover:bg-secondary"
+                >
+                  <Settings className="h-4 w-4" /> Settings
+                </Link>
+              </>
+            )}
             {showPostProperty && (
               <Link to="/post-property" onClick={() => setOpen(false)}>
                 <Button className="mt-2 w-full rounded-full bg-foreground text-background">Post Property — FREE</Button>

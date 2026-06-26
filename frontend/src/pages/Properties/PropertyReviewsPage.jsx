@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import api from "@/utils/api";
 import { Star, ChevronLeft, Loader2, Home as HomeIcon, Quote } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { resolveImage } from "@/utils/resolveImage";
 
 export default function PropertyReviewsPage() {
   const { id } = useParams();
@@ -71,7 +72,7 @@ export default function PropertyReviewsPage() {
           <div className="flex gap-4 items-center">
             <div className="h-16 w-20 overflow-hidden rounded-xl border border-border shrink-0 bg-muted">
               <img
-                src={property.photos && property.photos[0] ? (property.photos[0].startsWith('http') ? property.photos[0] : `http://localhost:5000${property.photos[0]}`) : "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80"}
+                src={resolveImage(property.photos?.[0])}
                 alt={property.title}
                 className="h-full w-full object-cover"
               />
