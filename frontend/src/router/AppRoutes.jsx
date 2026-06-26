@@ -1,4 +1,4 @@
-import { Routes, Route, Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Outlet, Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Header, MobileTabBar } from '@/components/site/Header';
 import { Footer } from '@/components/site/Footer';
 import { Toaster } from '@/components/ui/sonner';
@@ -57,6 +57,8 @@ const BlogListPage = lazy(() => import('@/pages/Static/BlogListPage'));
 const BlogDetailsPage = lazy(() => import('@/pages/Static/BlogDetailsPage'));
 const DealersPage = lazy(() => import('@/pages/Static/DealersPage'));
 const DealerProfilePage = lazy(() => import('@/pages/Static/DealerProfilePage'));
+const HelpPage = lazy(() => import('@/pages/Static/HelpPage'));
+const ReportPage = lazy(() => import('@/pages/Static/ReportPage'));
 
 // ─── Skeleton loader shown while session check is in-flight ───────────────────
 function PageSkeleton() {
@@ -81,7 +83,6 @@ function PageSkeleton() {
 function ProtectedRoute({ children }) {
     const { isAuthenticated, isLoading } = useAuth();
     const location = useLocation();
-    const navigate = useNavigate();
 
     // Still checking cookie session — show skeleton, do NOT redirect yet
     if (isLoading) return <PageSkeleton />;
@@ -89,8 +90,7 @@ function ProtectedRoute({ children }) {
     // Not authenticated — redirect to auth with return path
     if (!isAuthenticated) {
         const redirectPath = `${location.pathname}${location.search}`;
-        navigate(`/auth?redirect=${encodeURIComponent(redirectPath)}`, { replace: true });
-        return null;
+        return <Navigate to={`/auth?redirect=${encodeURIComponent(redirectPath)}`} replace />;
     }
 
     return children;
@@ -99,13 +99,11 @@ function ProtectedRoute({ children }) {
 // ─── Admin Protected Route ───────────────────────────────────────────────────
 function AdminProtectedRoute({ children }) {
     const { user, isAuthenticated, isLoading } = useAuth();
-    const navigate = useNavigate();
 
     if (isLoading) return <PageSkeleton />;
 
     if (!isAuthenticated || (user?.role !== 'admin' && user?.role !== 'superadmin')) {
-        navigate('/admin/login', { replace: true });
-        return null;
+        return <Navigate to="/admin/login" replace />;
     }
 
     return children;
@@ -130,17 +128,18 @@ function AppLayout() {
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 function NotFound() {
     return (
-        <div className="flex min-h-screen items-center justify-center bg-background px-4">
-            <div className="max-w-md text-center">
-                <h1 className="font-display text-7xl font-bold">404</h1>
-                <p className="mt-2 text-muted-foreground">This page doesn't exist.</p>
-                <Link
-                    to="/"
-                    className="mt-6 inline-flex rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground"
-                >
-                    Go home
-                </Link>
-            </div>
+        <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 py-16 text-center">
+            <h1 className="font-display text-9xl font-bold text-primary/20">404</h1>
+            <h2 className="mt-4 font-display text-3xl font-bold text-foreground">Page not found</h2>
+            <p className="mt-2 text-muted-foreground max-w-md mx-auto">
+                Sorry, the page you are looking for doesn't exist or has been moved.
+            </p>
+            <Link
+                to="/"
+                className="mt-8 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
+            >
+                Back to Homepage
+            </Link>
         </div>
     );
 }
@@ -197,6 +196,15 @@ export default function AppRoutes() {
                 <Route path="/dealers/:id" element={
                     <Suspense fallback={<PageSkeleton />}><DealerProfilePage /></Suspense>
                 } />
+                <Route path="/help" element={
+                    <Suspense fallback={<PageSkeleton />}><HelpPage /></Suspense>
+                } />
+                <Route path="/report" element={
+                    <Suspense fallback={<PageSkeleton />}><ReportPage /></Suspense>
+                } />
+
+                {/* 404 Page inside Layout */}
+                <Route path="*" element={<NotFound />} />
 
                 {/* Protected — require login */}
                 <Route path="/explore" element={
@@ -322,7 +330,6 @@ export default function AppRoutes() {
                 } />
             </Route>
 
-            <Route path="*" element={<NotFound />} />
         </Routes>
     );
 }
