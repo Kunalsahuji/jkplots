@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Users, Search, Loader2, Calendar, ShieldAlert, X, Home, Phone, Mail, UserCheck, Shield, Eye, Trash2, Heart, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react";
+import { Users, Search, Loader2, Calendar, ShieldAlert, X, Home, Phone, Mail, UserCheck, Shield, Eye, EyeOff, Trash2, Heart, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react";
 import api from "@/utils/api";
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -37,6 +37,7 @@ export default function AdminUsersPage() {
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserRole, setNewUserRole] = useState("user");
   const [newUserPassword, setNewUserPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [creatingUser, setCreatingUser] = useState(false);
 
   const handleDeleteUserClick = (userId) => {
@@ -735,14 +736,23 @@ export default function AdminUsersPage() {
               {(newUserRole === 'admin' || newUserRole === 'superadmin') && (
                 <div className="animate-in slide-in-from-top-2 duration-200">
                   <label className="text-xs font-semibold text-slate-500 block mb-1">Password *</label>
-                  <input
-                    required
-                    type="password"
-                    placeholder="Password for admin login"
-                    value={newUserPassword}
-                    onChange={(e) => setNewUserPassword(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 focus:bg-white focus:border-slate-950 focus:ring-1 focus:ring-slate-950 rounded-xl transition-all outline-none font-medium"
-                  />
+                  <div className="relative">
+                    <input
+                      required
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Password for admin login"
+                      value={newUserPassword}
+                      onChange={(e) => setNewUserPassword(e.target.value)}
+                      className="w-full px-3 pr-10 py-2 text-sm bg-slate-50 border border-slate-200 focus:bg-white focus:border-slate-950 focus:ring-1 focus:ring-slate-950 rounded-xl transition-all outline-none font-medium"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
               )}
 
