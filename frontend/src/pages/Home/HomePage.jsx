@@ -324,7 +324,7 @@ export default function HomePage() {
               transition={{ duration: 0.5 }}
             >
               <span className="inline-flex items-center gap-2 rounded-full border border-background/30 bg-background/20 px-3 py-1.5 text-xs font-semibold backdrop-blur shadow-sm">
-                {/* <Sparkles className="h-3.5 w-3.5 text-accent" /> */}
+                <Sparkles className="h-3.5 w-3.5 text-accent" />
                  J&amp;K's most trusted marketplace
               </span>
             </motion.div>
@@ -601,7 +601,7 @@ export default function HomePage() {
             <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
               <div>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/20 px-3 py-1 text-xs font-semibold text-accent">
-                  {/* <Sparkles className="h-3.5 w-3.5" /> */}
+                  <Sparkles className="h-3.5 w-3.5" />
                    List For Free
                 </span>
                 <h2 className="mt-4 font-display text-3xl font-bold leading-tight md:text-5xl">Want to sell or rent your property?</h2>
