@@ -15,26 +15,20 @@ import { properties, cities } from "@/utils/properties";
 import api from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
-import {
-  ShieldCheck,
-  Sparkles,
-  Headphones,
-  TrendingUp,
-  ArrowRight,
-  Star,
-  Quote,
-  X,
-  Smartphone,
-  BadgeCheck,
-  Home as HomeIcon,
-  KeyRound,
-  LandPlot,
-  Store,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { ShieldCheck, Sparkles, Headphones, TrendingUp, ArrowRight, Star, Quote, X, Smartphone, BadgeCheck, Home as HomeIcon, KeyRound, LandPlot, Store, ChevronLeft, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 
 const heroImages = [heroImg, prop1, prop2, prop3, prop4];
+
+function formatTitle(title) {
+  if (!title) return null;
+  if (typeof title !== "string") return title; // JSX fallback
+  const words = title.trim().split(/\s+/);
+  if (words.length <= 2) return <span className="text-accent">{title}</span>;
+  const firstPart = words.slice(0, -2).join(" ");
+  const lastPart = words.slice(-2).join(" ");
+  return <>{firstPart} <span className="text-accent">{lastPart}</span></>;
+}
 
 const purposeCategories = [
   {
@@ -232,8 +226,17 @@ export default function HomePage() {
   }, []);
 
   const activeProperties = propertyList.length > 0 ? propertyList : properties;
-  const featured = activeProperties.filter((p) => p.isFeatured && new Date(p.featuredUntil) > new Date()).slice(0, 8);
-  const all = activeProperties.filter((p) => !p.isFeatured || new Date(p.featuredUntil) <= new Date()).slice(0, 8);
+  const allFeatured = activeProperties.filter((p) => p.isFeatured && new Date(p.featuredUntil) > new Date());
+  const allLatest = activeProperties.filter((p) => !p.isFeatured || new Date(p.featuredUntil) <= new Date());
+
+  const itemsPerPage = 8;
+  const [latestPage, setLatestPage] = useState(1);
+  const totalLatestPages = Math.ceil(allLatest.length / itemsPerPage);
+  const paginatedLatest = allLatest.slice((latestPage - 1) * itemsPerPage, latestPage * itemsPerPage);
+
+  const [featuredPage, setFeaturedPage] = useState(1);
+  const totalFeaturedPages = Math.ceil(allFeatured.length / itemsPerPage);
+  const paginatedFeatured = allFeatured.slice((featuredPage - 1) * itemsPerPage, featuredPage * itemsPerPage);
 
   const heroImageMap = {
     "heroImg": heroImg,
@@ -258,7 +261,7 @@ export default function HomePage() {
     <div>
       {/* HERO */}
       {/* HERO */}
-      <section className="relative overflow-hidden h-[calc(100vh-64px)] flex items-center">
+      <section className="relative overflow-hidden h-[60vh] md:h-[calc(100vh-64px)] flex md:items-center">
         <div className="absolute inset-0">
           {activeBanners.map((b, index) => (
             <div
@@ -302,25 +305,46 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-        <div className="relative container-px mx-auto w-full max-w-7xl pb-8 pt-8 md:pb-16 md:pt-16 z-20 pointer-events-none">
-          <div className="max-w-3xl text-background pointer-events-auto inline-block">
-            <span className="inline-flex items-center gap-2 rounded-full border border-background/30 bg-background/10 px-3 py-1.5 text-xs font-medium backdrop-blur">
-              <Sparkles className="h-3.5 w-3.5 text-accent" /> J&amp;K's most trusted marketplace
-            </span>
-            <h1 className="mt-4 font-display text-3xl font-bold leading-[1.1] sm:text-4xl md:text-6xl lg:text-7xl">
-              {activeBanners[bgIndex]?.title || (
-                <>Find your place<br />in the <span className="text-accent">valley.</span></>
-              )}
-            </h1>
-            <p className="mt-4 max-w-xl text-sm text-background/85 sm:text-base md:text-lg">
-              {activeBanners[bgIndex]?.description || "Verified villas, apartments, plots and commercial spaces across Jammu & Kashmir — handpicked, transparent, real."}
-            </p>
+        <div className="relative container-px mx-auto w-full max-w-7xl pb-12 pt-20 md:pb-16 md:pt-28 z-20 pointer-events-none flex flex-col justify-end md:justify-center h-full">
+          <div className="max-w-3xl text-background pointer-events-auto inline-block min-h-[220px] md:min-h-[280px] flex flex-col justify-end md:justify-center">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <span className="inline-flex items-center gap-2 rounded-full border border-background/30 bg-background/20 px-3 py-1.5 text-xs font-semibold backdrop-blur shadow-sm">
+                {/* <Sparkles className="h-3.5 w-3.5 text-accent" /> */}
+                 J&amp;K's most trusted marketplace
+              </span>
+            </motion.div>
+            
+            <div className="relative mt-4">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={bgIndex}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <h1 className="font-display text-3xl font-extrabold tracking-tight leading-[1.1] sm:text-4xl md:text-6xl lg:text-7xl">
+                    {formatTitle(activeBanners[bgIndex]?.title) || (
+                      <>Find your place<br />in the <span className="text-accent">valley.</span></>
+                    )}
+                  </h1>
+                  <p className="mt-4 max-w-xl text-sm text-background/90 sm:text-base md:text-lg font-medium drop-shadow-md">
+                    {activeBanners[bgIndex]?.description || "Verified villas, apartments, plots and commercial spaces across Jammu & Kashmir — handpicked, transparent, real."}
+                  </p>
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
 
-          <div className="mt-8 md:mt-10 pointer-events-auto">
+          <div className="hidden md:block mt-8 md:mt-12 pointer-events-auto">
             <SearchBar />
           </div>
 
+          {/* 
           <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3 text-sm text-background/90 pointer-events-auto">
             {[
               [platformStats.properties, "Verified listings"],
@@ -333,9 +357,15 @@ export default function HomePage() {
                 <div className="text-[10px] text-background/70 md:text-xs">{l}</div>
               </div>
             ))}
-          </div>
+          </div> 
+          */}
         </div>
       </section>
+
+      {/* MOBILE SEARCH BAR */}
+      <div className="md:hidden container-px mx-auto relative z-30 -mt-10 mb-10">
+        <SearchBar />
+      </div>
 
       {/* CATEGORIES — premium image cards */}
       <section className="container-px mx-auto max-w-7xl py-14 md:py-20">
@@ -345,73 +375,112 @@ export default function HomePage() {
             <h2 className="mt-2 font-display text-3xl font-bold md:text-4xl">Browse by purpose</h2>
           </div>
         </div>
-        <InfiniteSlider 
+        <PaginatedSlider 
           items={purposeCategories}
           renderItem={(c, i) => (
-            <Link
+            <motion.div
               key={i}
-              to={`/properties?${c.query}`}
-              className="group relative block aspect-[4/5] w-[240px] sm:w-[280px] lg:w-[300px] shrink-0 overflow-hidden rounded-2xl border border-border bg-card shadow-soft transition-all hover:-translate-y-1 hover:shadow-elevated"
+              whileHover={{ scale: 1.03 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              className="shrink-0 block"
             >
-              <img
-                src={c.img}
-                alt={c.label}
-                loading="lazy"
-                width={800}
-                height={1000}
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-foreground/85 via-foreground/30 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-4 text-background">
-                <div className="mb-2 inline-grid h-9 w-9 place-items-center rounded-xl bg-background/95 text-primary shadow-soft">
-                  <c.icon className="h-4 w-4" />
+              <Link
+                to={`/properties?${c.query}`}
+                className="group relative block aspect-[4/5] w-[240px] sm:w-[280px] lg:w-[300px] h-full overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-card"
+              >
+                <motion.img
+                  src={c.img}
+                  alt={c.label}
+                  loading="lazy"
+                  width={800}
+                  height={1000}
+                  className="absolute inset-0 h-full w-full object-cover"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.6 }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-foreground/85 via-foreground/30 to-transparent pointer-events-none" />
+                <div className="absolute inset-x-0 bottom-0 p-4 text-background pointer-events-none">
+                  <div className="mb-2 inline-grid h-9 w-9 place-items-center rounded-xl bg-background/95 text-primary shadow-soft">
+                    <c.icon className="h-4 w-4" />
+                  </div>
+                  <div className="font-display text-base font-bold leading-tight md:text-lg">{c.label}</div>
+                  <div className="text-[11px] text-background/80 md:text-xs">{c.desc}</div>
+                  <div className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-accent opacity-0 transition-opacity group-hover:opacity-100">
+                    Explore <ArrowRight className="h-3 w-3" />
+                  </div>
                 </div>
-                <div className="font-display text-base font-bold leading-tight md:text-lg">{c.label}</div>
-                <div className="text-[11px] text-background/80 md:text-xs">{c.desc}</div>
-                <div className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-accent opacity-0 transition-opacity group-hover:opacity-100">
-                  Explore <ArrowRight className="h-3 w-3" />
-                </div>
-              </div>
-            </Link>
+              </Link>
+            </motion.div>
           )}
         />
       </section>
 
       {/* FEATURED */}
-      {featured && featured.length > 0 && (
-        <section className="container-px mx-auto max-w-7xl py-12">
-          <SectionHeader title="Featured properties" sub="Hand-curated, verified, ready to visit" link="/properties" />
+      {allFeatured && allFeatured.length > 0 && (
+        <section className="container-px mx-auto max-w-7xl py-12 overflow-hidden">
+          <SectionHeader title="Featured Listings" sub="Top picks from your community" link="/properties?featured=true" linkText="View All" />
+          
           <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {featured.map((p) => (
-              <PropertyCard key={p._id || p.id} p={p} />
+            {paginatedFeatured.map((p, i) => (
+              <PropertyCard key={p._id || p.id || i} p={p} />
             ))}
           </div>
+
+          {totalFeaturedPages > 1 && (
+            <div className="mt-10 flex justify-center gap-2">
+              {Array.from({ length: totalFeaturedPages }).map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    setFeaturedPage(idx + 1);
+                    document.getElementById('featured-listings')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className={`grid h-9 w-9 place-items-center rounded-full text-sm font-bold transition-all ${
+                    featuredPage === idx + 1 
+                      ? "bg-primary text-primary-foreground shadow-sm" 
+                      : "bg-card text-foreground hover:bg-secondary border border-border"
+                  }`}
+                >
+                  {idx + 1}
+                </button>
+              ))}
+            </div>
+          )}
         </section>
       )}
+
 
       {/* CITIES */}
       <section className="container-px mx-auto max-w-7xl py-16 overflow-hidden">
         <SectionHeader title="Explore by city" sub="From the lakes of Srinagar to the meadows of Sonmarg" />
-        <InfiniteSlider 
+        <PaginatedSlider 
           items={cities}
           renderItem={(c, i) => (
-            <Link
+            <motion.div
               key={i}
-              to={`/properties?city=${c.name}`}
-              className="group/card relative aspect-[3/4] w-[180px] sm:w-[220px] lg:w-[240px] shrink-0 overflow-hidden rounded-2xl shadow-soft"
+              whileHover={{ scale: 1.04 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              className="shrink-0 block"
             >
-              <img
-                src={c.image}
-                alt={c.name}
-                loading="lazy"
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover/card:scale-110"
-              />
-              <div className="absolute inset-0 bg-gradient-overlay" />
-              <div className="absolute inset-x-0 bottom-0 p-4 text-background">
-                <h3 className="font-display text-xl font-bold leading-none">{c.name}</h3>
-                <p className="mt-1 text-[11px] font-medium text-background/80">{c.count} properties</p>
-              </div>
-            </Link>
+              <Link
+                to={`/properties?city=${c.name}`}
+                className="group/card relative block aspect-[3/4] w-[180px] sm:w-[220px] lg:w-[240px] h-full overflow-hidden rounded-2xl shadow-sm hover:shadow-card transition-shadow"
+              >
+                <motion.img
+                  src={c.image}
+                  alt={c.name}
+                  loading="lazy"
+                  className="absolute inset-0 h-full w-full object-cover"
+                  whileHover={{ scale: 1.08 }}
+                  transition={{ duration: 0.6 }}
+                />
+                <div className="absolute inset-0 bg-gradient-overlay pointer-events-none" />
+                <div className="absolute inset-x-0 bottom-0 p-4 text-background pointer-events-none">
+                  <h3 className="font-display text-xl font-bold leading-none">{c.name}</h3>
+                  <p className="mt-1 text-[11px] font-medium text-background/80">{c.count} properties</p>
+                </div>
+              </Link>
+            </motion.div>
           )}
         />
       </section>
@@ -449,15 +518,39 @@ export default function HomePage() {
         </div>
       </section> */}
 
-      {/* LATEST */}
-      <section className="container-px mx-auto max-w-7xl py-16">
-        <SectionHeader title="Latest listings" sub="Fresh on the market this week" link="/properties" />
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {all.map((p) => (
-            <PropertyCard key={p._id || p.id} p={p} />
-          ))}
-        </div>
-      </section>
+      {/* LATEST LISTINGS */}
+      {allLatest && allLatest.length > 0 && (
+        <section className="container-px mx-auto max-w-7xl py-16 overflow-hidden border-t border-border bg-secondary/30">
+          <SectionHeader title="Latest Properties" sub="Freshly added to our marketplace" link="/properties?sort=newest" linkText="View All" />
+          
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {paginatedLatest.map((p, i) => (
+              <PropertyCard key={p._id || p.id || i} p={p} />
+            ))}
+          </div>
+
+          {totalLatestPages > 1 && (
+            <div className="mt-10 flex justify-center gap-2">
+              {Array.from({ length: totalLatestPages }).map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    setLatestPage(idx + 1);
+                    document.getElementById('latest-listings')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className={`grid h-9 w-9 place-items-center rounded-full text-sm font-bold transition-all ${
+                    latestPage === idx + 1 
+                      ? "bg-primary text-primary-foreground shadow-sm" 
+                      : "bg-card text-foreground hover:bg-secondary border border-border"
+                  }`}
+                >
+                  {idx + 1}
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* TESTIMONIALS */}
       <section className="container-px mx-auto max-w-7xl py-16 overflow-hidden">
@@ -497,7 +590,8 @@ export default function HomePage() {
             <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
               <div>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/20 px-3 py-1 text-xs font-semibold text-accent">
-                  <Sparkles className="h-3.5 w-3.5" /> List For Free
+                  {/* <Sparkles className="h-3.5 w-3.5" /> */}
+                   List For Free
                 </span>
                 <h2 className="mt-4 font-display text-3xl font-bold leading-tight md:text-5xl">Want to sell or rent your property?</h2>
                 <p className="mt-4 max-w-md text-background/85 md:text-lg">
@@ -611,74 +705,54 @@ export default function HomePage() {
   );
 }
 
-function SectionHeader({ title, sub, link, linkText = "View all" }) {
+function SectionHeader({ title, sub, link, linkText = "View All" }) {
   return (
-    <div className="flex items-end justify-between gap-4">
+    <div className="flex flex-col items-start gap-4 md:flex-row md:items-end md:justify-between w-full">
       <div>
-        <h2 className="font-display text-3xl font-bold md:text-4xl">{title}</h2>
-        <p className="mt-2 text-muted-foreground">{sub}</p>
+        <h2 className="font-display text-[22px] sm:text-[26px] md:text-3xl font-extrabold tracking-tight">{title}</h2>
+        <p className="mt-1 text-sm font-medium text-muted-foreground">{sub}</p>
       </div>
       {link && (
         <Link
           to={link}
-          className="hidden shrink-0 items-center gap-1 text-sm font-semibold text-primary hover:underline md:inline-flex"
+          className="shrink-0 flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-bold text-primary shadow-sm transition-all hover:bg-primary hover:text-primary-foreground md:px-5 md:py-2"
         >
-          {linkText} <ArrowRight className="h-3.5 w-3.5" />
+          {linkText} <ChevronRight className="h-4 w-4" />
         </Link>
       )}
     </div>
   );
 }
 
-function InfiniteSlider({ items, renderItem }) {
+function PaginatedSlider({ items, renderItem }) {
   const scrollRef = useRef(null);
-  const [isPaused, setIsPaused] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
-  // Extend items array to create infinite illusion
-  const extendedItems = [...items, ...items, ...items, ...items];
-
-  useEffect(() => {
-    let animationFrameId;
-    let scrollAmount = 0.6; // Speed
-
-    const scroll = () => {
-      if (scrollRef.current && !isPaused) {
-        scrollRef.current.scrollLeft += scrollAmount;
-        const setWidth = scrollRef.current.scrollWidth / 4;
-        
-        // Reset scroll continuously to create infinite loop
-        if (scrollRef.current.scrollLeft >= setWidth * 2) {
-          scrollRef.current.scrollLeft -= setWidth;
-        } else if (scrollRef.current.scrollLeft <= 0) {
-          scrollRef.current.scrollLeft += setWidth;
-        }
-      }
-      animationFrameId = requestAnimationFrame(scroll);
-    };
-
-    animationFrameId = requestAnimationFrame(scroll);
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [isPaused]);
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+    const maxScroll = scrollWidth - clientWidth;
+    if (maxScroll <= 0) setScrollProgress(0);
+    else setScrollProgress(scrollLeft / maxScroll);
+  };
 
   const scrollLeft = () => {
-    if (scrollRef.current) scrollRef.current.scrollBy({ left: -300, behavior: 'smooth' });
+    if (scrollRef.current) scrollRef.current.scrollBy({ left: -320, behavior: 'smooth' });
   };
   
   const scrollRight = () => {
-    if (scrollRef.current) scrollRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+    if (scrollRef.current) scrollRef.current.scrollBy({ left: 320, behavior: 'smooth' });
   };
 
+  // Determine number of dots based on items and a rough screen estimate (e.g. 5 dots max)
+  const totalDots = Math.max(1, Math.min(items.length, 5));
+  const activeDot = Math.round(scrollProgress * (totalDots - 1));
+
   return (
-    <div 
-      className="relative mt-8 group -mx-4 px-4 sm:mx-0 sm:px-0" 
-      onMouseEnter={() => setIsPaused(true)} 
-      onMouseLeave={() => setIsPaused(false)}
-      onTouchStart={() => setIsPaused(true)}
-      onTouchEnd={() => { setTimeout(() => setIsPaused(false), 1500) }}
-    >
+    <div className="relative mt-6 group -mx-4 px-4 sm:mx-0 sm:px-0">
       <button 
         onClick={scrollLeft}
-        className="absolute left-2 top-1/2 -translate-y-1/2 z-10 grid h-10 w-10 place-items-center rounded-full bg-background/95 text-foreground shadow-elevated opacity-100 md:opacity-0 transition-all duration-300 md:group-hover:opacity-100 hover:scale-110 sm:left-4"
+        className="absolute left-2 top-[40%] -translate-y-1/2 z-10 grid h-10 w-10 place-items-center rounded-full border border-border bg-background/95 text-foreground shadow-card opacity-100 md:opacity-0 transition-all duration-300 md:group-hover:opacity-100 hover:scale-110 sm:-left-5"
         aria-label="Scroll left"
       >
         <ChevronLeft className="h-5 w-5" />
@@ -686,19 +760,34 @@ function InfiniteSlider({ items, renderItem }) {
 
       <div 
         ref={scrollRef} 
-        className="flex gap-4 overflow-x-auto py-2 scrollbar-none"
+        onScroll={handleScroll}
+        className="flex gap-4 overflow-x-auto py-4 scrollbar-none snap-x snap-mandatory"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
       >
-        {extendedItems.map((item, i) => renderItem(item, i))}
+        {items.map((item, i) => (
+          <div key={i} className="snap-start shrink-0 h-full">
+            {renderItem(item, i)}
+          </div>
+        ))}
       </div>
 
       <button 
         onClick={scrollRight}
-        className="absolute right-2 top-1/2 -translate-y-1/2 z-10 grid h-10 w-10 place-items-center rounded-full bg-background/95 text-foreground shadow-elevated opacity-100 md:opacity-0 transition-all duration-300 md:group-hover:opacity-100 hover:scale-110 sm:right-4"
+        className="absolute right-2 top-[40%] -translate-y-1/2 z-10 grid h-10 w-10 place-items-center rounded-full border border-border bg-background/95 text-foreground shadow-card opacity-100 md:opacity-0 transition-all duration-300 md:group-hover:opacity-100 hover:scale-110 sm:-right-5"
         aria-label="Scroll right"
       >
         <ChevronRight className="h-5 w-5" />
       </button>
+
+      {/* Pagination Dots */}
+      <div className="flex items-center justify-center gap-2 mt-2">
+        {Array.from({ length: totalDots }).map((_, i) => (
+          <div 
+            key={i} 
+            className={`h-1.5 rounded-full transition-all duration-300 ${i === activeDot ? "w-6 bg-primary" : "w-1.5 bg-border/80"}`} 
+          />
+        ))}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, Search, Heart, User, Menu, X, Plus, LogOut, LayoutDashboard, Settings, ChevronDown } from "lucide-react";
+import { motion } from "motion/react";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -60,20 +61,25 @@ export function Header() {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-1 lg:flex">
+        <nav className="hidden items-center gap-1 lg:flex relative">
           {nav.map((n) => {
             const isActive = currentPath === n.to || (n.to !== "/" && currentPath.startsWith(n.to));
             return (
               <Link
                 key={n.label}
                 to={n.to}
-                className={`rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
-                  isActive 
-                    ? "text-foreground bg-secondary" 
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                className={`relative px-4 py-2 text-sm font-semibold transition-colors duration-200 ${
+                  isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {n.label}
+                {isActive && (
+                  <motion.div
+                    layoutId="navbar-indicator"
+                    className="absolute inset-0 rounded-full bg-primary/10"
+                    transition={{ type: "spring", bounce: 0.25, duration: 0.5 }}
+                  />
+                )}
+                <span className="relative z-10">{n.label}</span>
               </Link>
             );
           })}

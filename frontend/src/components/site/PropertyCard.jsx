@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { MapPin, BadgeCheck, Heart, Eye } from "lucide-react";
+import { MapPin, BadgeCheck, Heart, Eye, Zap } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
@@ -53,13 +53,13 @@ export function PropertyCard({ p }) {
   return (
     <Link
       to={`/properties/${id}`}
-      className={`group flex flex-col h-full overflow-hidden rounded-2xl border transition-all duration-300 ${
+      className={`group flex flex-col h-full overflow-hidden rounded-[20px] transition-all duration-300 ${
         isFeatured
-          ? "border-amber-400 bg-gradient-to-b from-card to-amber-50/10 dark:to-amber-950/5 shadow-[0_4px_20px_rgba(245,158,11,0.08)] hover:-translate-y-1.5 hover:shadow-[0_12px_24px_rgba(245,158,11,0.18)]"
-          : "border-border bg-card hover:-translate-y-1 hover:shadow-md"
+          ? "bg-card border-2 border-primary/10 shadow-md hover:-translate-y-1 hover:shadow-xl hover:border-primary/20"
+          : "bg-card border border-border/50 shadow-sm hover:-translate-y-1 hover:shadow-soft"
       }`}
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+      <div className="relative aspect-[4/3] overflow-hidden bg-secondary shrink-0">
         <img
           src={imgSrc}
           alt={title}
@@ -69,52 +69,42 @@ export function PropertyCard({ p }) {
         />
         <div className="absolute left-3 top-3 flex flex-col gap-1.5">
           {isFeatured && (
-            <span className="flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-600 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-md uppercase tracking-wider animate-pulse">
-              ★ Featured
+            <span className="flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-extrabold text-primary shadow-sm uppercase tracking-wide">
+              ⭐ FEATURED
             </span>
           )}
-          {(p.verified || p.isActive) && (
-            <span className="flex items-center gap-0.5 rounded-full bg-emerald-500/90 backdrop-blur-sm px-2.5 py-0.5 text-[10px] font-semibold text-white shadow-sm">
-              <BadgeCheck className="h-3 w-3" /> Verified
+          {(p.verified || p.isActive) && !isFeatured && (
+            <span className="flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-emerald-600 shadow-sm uppercase tracking-wide">
+              <BadgeCheck className="h-3.5 w-3.5" /> VERIFIED
             </span>
           )}
         </div>
         <button
           onClick={handleSaveToggle}
-          className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-background/90 backdrop-blur-md transition hover:scale-110 shadow-md"
+          className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-white/95 transition hover:scale-110 shadow-sm"
           aria-label="Save"
         >
-          <Heart className={`h-4 w-4 ${isSaved ? "fill-destructive text-destructive" : "text-foreground"}`} />
+          <Heart className={`h-4 w-4 ${isSaved ? "fill-primary text-primary" : "text-muted-foreground"}`} />
         </button>
       </div>
 
-      <div className="space-y-2 p-4 flex-1 flex flex-col">
-        <h3 className="line-clamp-1 font-display text-sm font-semibold leading-tight text-foreground/90 group-hover:text-primary transition-colors">
+      <div className="p-4 flex-1 flex flex-col">
+        <h3 className="line-clamp-2 font-display text-[17px] font-bold leading-tight text-foreground group-hover:text-primary transition-colors">
           {title}
         </h3>
-        <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
-          <MapPin className="h-3.5 w-3.5 text-muted-foreground/70" /> <span className="line-clamp-1">{area}, {city}</span>
+        <p className="mt-1.5 line-clamp-2 text-[13px] text-muted-foreground leading-relaxed">
+          {p.description || `Premium ${type} available in ${area}, ${city} with modern amenities.`}
         </p>
-        <div className="flex items-center justify-between gap-1.5 pt-2 mt-auto border-t border-border/60">
-          <div className={`font-display text-[15px] whitespace-nowrap font-extrabold ${isFeatured ? "text-amber-600 dark:text-amber-400" : "text-primary"}`}>
-            {priceLabel}
-          </div>
-          <div className="flex items-center gap-1.5 min-w-0 justify-end">
-            {p.views !== undefined && (
-               <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium bg-secondary/80 px-1.5 py-0.5 rounded-md shrink-0" title={`${p.views} Views`}>
-                 <Eye className="h-3 w-3" /> {p.views}
-               </span>
-            )}
-            <span 
-              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap truncate max-w-[90px] sm:max-w-[110px] ${
-                isFeatured 
-                  ? "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
-                  : "bg-primary-soft text-primary"
-              }`}
-              title={type}
-            >
-              {type}
+        
+        <div className="mt-auto pt-4 flex flex-col gap-2">
+          <div className="flex items-baseline gap-1">
+            <span className="font-display text-2xl font-black text-primary tracking-tight">{priceLabel}</span>
+            <span className="text-sm font-medium text-muted-foreground">
+              {p.purpose === "Rent" ? "/month" : ""}
             </span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground font-medium">
+            <MapPin className="h-4 w-4" /> <span className="line-clamp-1">{area}, {city}</span>
           </div>
         </div>
       </div>

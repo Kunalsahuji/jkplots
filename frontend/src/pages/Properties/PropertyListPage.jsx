@@ -25,6 +25,7 @@ export default function PropertyListPage() {
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [furnished, setFurnished] = useState(false);
   const [sort, setSort] = useState("relevance");
+  const [isFeaturedParam, setIsFeaturedParam] = useState(false);
 
   // Pagination state
   const [page, setPage] = useState(1);
@@ -53,10 +54,14 @@ export default function PropertyListPage() {
     const purposeParam = searchParams.get("purpose") || "All";
     const typeParam = searchParams.get("type") || "All";
     const searchParam = searchParams.get("search") || "";
+    const sortParam = searchParams.get("sort") || "relevance";
+    const featuredParam = searchParams.get("featured") === "true";
 
     setCity(cityParam);
     setPurpose(purposeParam);
     setType(typeParam);
+    setSort(sortParam);
+    setIsFeaturedParam(featuredParam);
 
     // Save search preferences to localStorage if they are not default "All" or if a query exists
     if (cityParam !== "All" || typeParam !== "All" || purposeParam !== "All" || searchParam.trim()) {
@@ -117,9 +122,12 @@ export default function PropertyListPage() {
 
     if (sort === "price-asc") params.sort = "price";
     if (sort === "price-desc") params.sort = "-price";
+    if (sort === "newest") params.sort = "-createdAt";
+    
+    if (isFeaturedParam) params.isFeatured = true;
 
     return params;
-  }, [city, type, purpose, beds, debouncedBudget, sort, searchParams, page]);
+  }, [city, type, purpose, beds, debouncedBudget, sort, searchParams, page, isFeaturedParam]);
 
   // Query properties using React Query hook
   const { data: propertiesData, isLoading } = useProperties(apiParams);
@@ -222,10 +230,16 @@ export default function PropertyListPage() {
               </button>
               <select
                 value={sort}
-                onChange={(e) => setSort(e.target.value)}
+                onChange={(e) => {
+                  setSort(e.target.value);
+                  const newParams = new URLSearchParams(searchParams);
+                  newParams.set("sort", e.target.value);
+                  setSearchParams(newParams, { replace: true });
+                }}
                 className="rounded-full border border-border bg-card px-4 py-2 text-sm font-medium"
               >
                 <option value="relevance">Most relevant</option>
+                <option value="newest">Newest first</option>
                 <option value="price-asc">Price: Low to High</option>
                 <option value="price-desc">Price: High to Low</option>
               </select>

@@ -116,13 +116,12 @@ export function SearchBar({ compact = false }) {
         
         {/* Global Search Input */}
         <div ref={wrapperRef} className="relative">
-          <label className={`flex items-center gap-2 rounded-xl border border-border bg-background ${inputPadding} focus-within:border-primary md:border-0 h-full`}>
-            <SearchIcon className="h-4 w-4 text-muted-foreground" />
-            <div className="flex-1">
+          <label className={`flex items-center justify-between gap-2 rounded-xl border border-border bg-background ${inputPadding} focus-within:border-primary md:border-0 h-full`}>
+            <div className="flex-1 w-full overflow-hidden">
               <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Search</div>
               <input
                 type="text"
-                placeholder="Name, Furnished, Locality..."
+                placeholder="Name, Locality..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -133,7 +132,13 @@ export function SearchBar({ compact = false }) {
                 className="w-full bg-transparent text-sm font-medium outline-none placeholder:font-normal placeholder:text-muted-foreground/60"
               />
             </div>
-            {loadingSuggestions && <Loader2 className="h-4 w-4 text-primary animate-spin" />}
+            {loadingSuggestions ? (
+              <Loader2 className="h-4 w-4 text-primary animate-spin" />
+            ) : (
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-primary">
+                <SearchIcon className="h-4 w-4" />
+              </div>
+            )}
           </label>
 
           {/* Suggestions Dropdown */}
@@ -161,35 +166,39 @@ export function SearchBar({ compact = false }) {
           )}
         </div>
 
-        <label className={`flex items-center gap-2 rounded-xl border border-border bg-background ${inputPadding} focus-within:border-primary md:border-0 md:border-l`}>
-          <MapPin className="h-4 w-4 text-muted-foreground" />
-          <div className="flex-1">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">City</div>
-            <select
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              className="w-full bg-transparent text-sm font-medium outline-none"
-            >
-              {cities.map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
-          </div>
+        <label className={`${compact ? "hidden md:flex" : "flex"} items-center justify-between gap-2 rounded-xl border border-border bg-background ${inputPadding} focus-within:border-primary md:border-0 md:border-l`}>
+            <div className="flex-1 w-full overflow-hidden">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">City</div>
+              <select
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="w-full bg-transparent text-sm font-medium outline-none appearance-none"
+              >
+                {cities.map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-primary">
+              <MapPin className="h-4 w-4" />
+            </div>
         </label>
 
-        <label className={`flex items-center gap-2 rounded-xl border border-border bg-background ${inputPadding} focus-within:border-primary md:border-0 md:border-l`}>
-          <Building2 className="h-4 w-4 text-muted-foreground" />
-          <div className="flex-1">
+        <label className={`${compact ? "hidden md:flex" : "flex"} items-center justify-between gap-2 rounded-xl border border-border bg-background ${inputPadding} focus-within:border-primary md:border-0 md:border-l`}>
+          <div className="flex-1 w-full overflow-hidden">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Property Type</div>
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="w-full bg-transparent text-sm font-medium outline-none"
+              className="w-full bg-transparent text-sm font-medium outline-none appearance-none"
             >
               {types.map((t) => (
                 <option key={t}>{t}</option>
               ))}
             </select>
+          </div>
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-primary">
+            <Building2 className="h-4 w-4" />
           </div>
         </label>
 
