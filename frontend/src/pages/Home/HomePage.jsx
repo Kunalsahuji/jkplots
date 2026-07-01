@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import heroImg from "@/assets/hero-kashmir.jpg";
 import prop1 from "@/assets/prop-1.jpg";
@@ -238,6 +238,17 @@ export default function HomePage() {
   const totalFeaturedPages = Math.ceil(allFeatured.length / itemsPerPage);
   const paginatedFeatured = allFeatured.slice((featuredPage - 1) * itemsPerPage, featuredPage * itemsPerPage);
 
+  const dynamicCities = useMemo(() => {
+    const counts = {};
+    activeProperties.forEach(p => {
+      if (p.city) counts[p.city] = (counts[p.city] || 0) + 1;
+    });
+    return cities.map(c => ({
+      ...c,
+      count: counts[c.name] || 0
+    }));
+  }, [activeProperties]);
+
   const heroImageMap = {
     "heroImg": heroImg,
     "prop1": prop1,
@@ -454,7 +465,7 @@ export default function HomePage() {
       <section className="container-px mx-auto max-w-7xl py-16 overflow-hidden">
         <SectionHeader title="Explore by city" sub="From the lakes of Srinagar to the meadows of Sonmarg" />
         <PaginatedSlider 
-          items={cities}
+          items={dynamicCities}
           renderItem={(c, i) => (
             <motion.div
               key={i}
